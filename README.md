@@ -59,6 +59,11 @@ El modelo de datos cumple con los tres tipos de cardinalidades requeridas (`1:1`
 * **Gestor de Construcción:** Apache Maven[cite: 1].
 * **Diseño y Modelado:** Draw.io (UML)[cite: 1] y MySQL Workbench (Diagramas EER mediante Reverse Engineer)[cite: 1].
 
+## 📚 Documentación y Recursos
+
+- **Wiki del repositorio:** Detalla los aspectos del marco PMI, arquitectura de backend, actas y planificación técnica.
+- **Google Drive:** Almacena la documentación general del proyecto.  
+  [Acceder a la carpeta del proyecto en Google Drive](https://drive.google.com/drive/u/1/folders/1KQLWydgsWH7hCD0RqfqIrFO5AzJRqB5E)
 ---
 
 ## Estructura del Proyecto
@@ -84,4 +89,6 @@ src/main/java/com/upc/demo/
 │   ├── ReservaRepositorio.java
 │   ├── ServicioRepositorio.java
 │   └── UsuarioRepositorio.java
-└── servicio/           # Lógica de negocio y transacciones (Fase TP 2)
+└── servicio/           # Lógica de negocio y transacciones
+
+
