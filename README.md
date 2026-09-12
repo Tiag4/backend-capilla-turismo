@@ -66,6 +66,18 @@ El modelo de datos cumple con los tres tipos de cardinalidades requeridas (`1:1`
   [Acceder a la carpeta del proyecto en Google Drive](https://drive.google.com/drive/u/1/folders/1KQLWydgsWH7hCD0RqfqIrFO5AzJRqB5E)
 ---
 
+## Equipo
+
+Proyecto desarrollado por:
+
+| Integrante              |
+| ----------------------- |
+| **Tiago Nicolitsis**    |
+| **Martino Costigliolo** |
+| **Juan Larcher**        |
+
+---
+
 ## Estructura del Proyecto
 
 ```text
