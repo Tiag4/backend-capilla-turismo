@@ -16,8 +16,12 @@ import java.util.UUID;
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
     Optional<Booking> findByBookingCode(String bookingCode);
     Optional<Booking> findByBookingCodeAndGuestEmail(String bookingCode, String guestEmail);
+    Optional<Booking> findByBookingCodeAndGuestEmailIgnoreCase(String bookingCode, String guestEmail);
     List<Booking> findByAccommodationId(UUID accommodationId);
     List<Booking> findByTouristId(UUID touristId);
+    List<Booking> findByTouristIdOrderByCreatedAtDesc(UUID touristId);
+    List<Booking> findByAccommodationHostIdOrderByCreatedAtDesc(UUID hostId);
+    List<Booking> findByAccommodationHostIdAndStatusOrderByCreatedAtDesc(UUID hostId, BookingStatus status);
     List<Booking> findByStatus(BookingStatus status);
 
     @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.accommodation.id = :accommodationId " +

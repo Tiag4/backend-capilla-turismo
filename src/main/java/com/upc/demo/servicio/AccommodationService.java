@@ -1,5 +1,6 @@
 package com.upc.demo.servicio;
 
+import com.upc.demo.config.exception.BadRequestException;
 import com.upc.demo.config.exception.ForbiddenException;
 import com.upc.demo.config.exception.ResourceNotFoundException;
 import com.upc.demo.dto.accommodation.AccommodationImageDto;
@@ -13,13 +14,12 @@ import com.upc.demo.entidad.enums.AccommodationType;
 import com.upc.demo.repositorio.AccommodationImageRepository;
 import com.upc.demo.repositorio.AccommodationRepository;
 import com.upc.demo.repositorio.UserRepository;
-import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -38,44 +38,63 @@ public class AccommodationService {
                                                  BigDecimal minPrice,
                                                  BigDecimal maxPrice,
                                                  Integer guests,
-                                                 String search) {
-        Specification<Accommodation> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
+                                                 String search,
+                                                 LocalDate checkIn,
+                                                 LocalDate checkOut) {
+        List<Accommodation> accommodations;
 
-            // Por defecto, solo alojamientos activos en el listado publico
-            predicates.add(cb.isTrue(root.get("isActive")));
-
-            if (type != null) {
-                predicates.add(cb.equal(root.get("type"), type));
+        if (checkIn != null && checkOut != null) {
+            if (!checkOut.isAfter(checkIn)) {
+                throw new BadRequestException("La fecha de check-out debe ser posterior a la de check-in");
             }
+            accommodations = accommodationRepository.findAvailableAccommodations(checkIn, checkOut);
+        } else if (checkIn != null || checkOut != null) {
+            throw new BadRequestException("Debe proporcionar tanto checkIn como checkOut para filtrar por disponibilidad");
+        } else {
+            accommodations = accommodationRepository.findByIsActiveTrue();
+        }
 
-            if (minPrice != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("pricePerNight"), minPrice));
-            }
+        if (type != null) {
+            accommodations = accommodations.stream()
+                    .filter(a -> a.getType() == type)
+                    .collect(Collectors.toList());
+        }
 
-            if (maxPrice != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("pricePerNight"), maxPrice));
-            }
+        if (minPrice != null) {
+            accommodations = accommodations.stream()
+                    .filter(a -> a.getPricePerNight() != null && a.getPricePerNight().compareTo(minPrice) >= 0)
+                    .collect(Collectors.toList());
+        }
 
-            if (guests != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("maxGuests"), guests));
-            }
+        if (maxPrice != null) {
+            accommodations = accommodations.stream()
+                    .filter(a -> a.getPricePerNight() != null && a.getPricePerNight().compareTo(maxPrice) <= 0)
+                    .collect(Collectors.toList());
+        }
 
-            if (search != null && !search.isBlank()) {
-                String pattern = "%" + search.toLowerCase().trim() + "%";
-                Predicate nameMatch = cb.like(cb.lower(root.get("name")), pattern);
-                Predicate descMatch = cb.like(cb.lower(root.get("description")), pattern);
-                Predicate addressMatch = cb.like(cb.lower(root.get("address")), pattern);
-                predicates.add(cb.or(nameMatch, descMatch, addressMatch));
-            }
+        if (guests != null) {
+            accommodations = accommodations.stream()
+                    .filter(a -> a.getMaxGuests() != null && a.getMaxGuests() >= guests)
+                    .collect(Collectors.toList());
+        }
 
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
+        if (search != null && !search.isBlank()) {
+            String lowerSearch = search.toLowerCase().trim();
+            accommodations = accommodations.stream()
+                    .filter(a -> (a.getName() != null && a.getName().toLowerCase().contains(lowerSearch)) ||
+                            (a.getDescription() != null && a.getDescription().toLowerCase().contains(lowerSearch)) ||
+                            (a.getAddress() != null && a.getAddress().toLowerCase().contains(lowerSearch)))
+                    .collect(Collectors.toList());
+        }
 
-        return accommodationRepository.findAll(spec)
-                .stream()
+        return accommodations.stream()
                 .map(AccommodationResponseDto::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AccommodationResponseDto> getAll(LocalDate checkIn, LocalDate checkOut) {
+        return getAll(null, null, null, null, null, checkIn, checkOut);
     }
 
     @Transactional(readOnly = true)

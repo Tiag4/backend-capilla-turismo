@@ -33,6 +33,8 @@ public class AccommodationResponseDto {
     private Integer maxGuests;
     private List<String> amenities;
     private Boolean isActive;
+    private UUID hostId;
+    private String hostName;
     private UserProfileDto host;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -55,6 +57,11 @@ public class AccommodationResponseDto {
                 ? UserProfileDto.fromEntity(entity.getHost())
                 : null;
 
+        UUID hostUuid = entity.getHost() != null ? entity.getHost().getId() : null;
+        String hostFullName = entity.getHost() != null
+                ? (entity.getHost().getName() + " " + entity.getHost().getLastName()).trim()
+                : null;
+
         return AccommodationResponseDto.builder()
                 .id(entity.getId())
                 .name(entity.getName())
@@ -68,6 +75,8 @@ public class AccommodationResponseDto {
                 .maxGuests(entity.getMaxGuests())
                 .amenities(entity.getAmenities() != null ? new ArrayList<>(entity.getAmenities()) : new ArrayList<>())
                 .isActive(entity.getIsActive())
+                .hostId(hostUuid)
+                .hostName(hostFullName)
                 .host(hostDto)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
