@@ -4,6 +4,7 @@ import com.upc.demo.config.UserPrincipal;
 import com.upc.demo.config.exception.UnauthorizedException;
 import com.upc.demo.dto.auth.AuthResponseDto;
 import com.upc.demo.dto.auth.LoginRequestDto;
+import com.upc.demo.dto.auth.RegisterHostDto;
 import com.upc.demo.dto.auth.RegisterTouristDto;
 import com.upc.demo.dto.auth.UserProfileDto;
 import com.upc.demo.servicio.AuthService;
@@ -29,6 +30,11 @@ public class AuthController {
     @PostMapping("/register-tourist")
     public ResponseEntity<AuthResponseDto> registerTourist(@Valid @RequestBody RegisterTouristDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerTourist(dto));
+    }
+
+    @PostMapping("/register-host")
+    public ResponseEntity<AuthResponseDto> registerHost(@Valid @RequestBody RegisterHostDto dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerHost(dto));
     }
 
     @GetMapping("/me")
