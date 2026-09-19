@@ -23,7 +23,8 @@ public class AccommodationImageDto {
 
     private String publicId;
 
-    private Boolean isMain;
+    @Builder.Default
+    private Boolean isMain = false;
 
     private LocalDateTime createdAt;
 

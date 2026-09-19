@@ -1,5 +1,6 @@
 package com.upc.demo.dto.accommodation;
 
+import com.upc.demo.dto.auth.UserProfileDto;
 import com.upc.demo.entidad.Accommodation;
 import com.upc.demo.entidad.enums.AccommodationType;
 import lombok.AllArgsConstructor;
@@ -34,6 +35,7 @@ public class AccommodationResponseDto {
     private Boolean isActive;
     private UUID hostId;
     private String hostName;
+    private UserProfileDto host;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -51,12 +53,14 @@ public class AccommodationResponseDto {
                 .collect(Collectors.toList())
                 : new ArrayList<>();
 
-        String hostFullName = null;
-        UUID hostUuid = null;
-        if (entity.getHost() != null) {
-            hostUuid = entity.getHost().getId();
-            hostFullName = (entity.getHost().getName() + " " + entity.getHost().getLastName()).trim();
-        }
+        UserProfileDto hostDto = entity.getHost() != null
+                ? UserProfileDto.fromEntity(entity.getHost())
+                : null;
+
+        UUID hostUuid = entity.getHost() != null ? entity.getHost().getId() : null;
+        String hostFullName = entity.getHost() != null
+                ? (entity.getHost().getName() + " " + entity.getHost().getLastName()).trim()
+                : null;
 
         return AccommodationResponseDto.builder()
                 .id(entity.getId())
@@ -73,6 +77,7 @@ public class AccommodationResponseDto {
                 .isActive(entity.getIsActive())
                 .hostId(hostUuid)
                 .hostName(hostFullName)
+                .host(hostDto)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .images(imageDtos)
