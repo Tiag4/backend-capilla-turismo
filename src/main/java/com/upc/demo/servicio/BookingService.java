@@ -5,6 +5,7 @@ import com.upc.demo.config.exception.BadRequestException;
 import com.upc.demo.config.exception.ConflictException;
 import com.upc.demo.config.exception.ForbiddenException;
 import com.upc.demo.config.exception.ResourceNotFoundException;
+import com.upc.demo.dto.booking.BookingLookupResponseDto;
 import com.upc.demo.dto.booking.BookingResponseDto;
 import com.upc.demo.dto.booking.CreateBookingDto;
 import com.upc.demo.entidad.Accommodation;
@@ -21,8 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -127,6 +130,64 @@ public class BookingService {
         booking.setStatus(newStatus);
         Booking updatedBooking = bookingRepository.save(booking);
         return mapToResponseDto(updatedBooking);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingResponseDto> getMyBookings(UUID hostId, BookingStatus status) {
+        List<Booking> bookings;
+        if (status != null) {
+            bookings = bookingRepository.findByAccommodationHostIdAndStatusOrderByCreatedAtDesc(hostId, status);
+        } else {
+            bookings = bookingRepository.findByAccommodationHostIdOrderByCreatedAtDesc(hostId);
+        }
+        return bookings.stream().map(this::mapToResponseDto).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingResponseDto> getTouristBookings(UUID touristId) {
+        return bookingRepository.findByTouristIdOrderByCreatedAtDesc(touristId).stream()
+                .map(this::mapToResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public BookingLookupResponseDto lookup(String code, String email) {
+        if (code == null || code.isBlank() || email == null || email.isBlank()) {
+            throw new BadRequestException("El código de reserva y el email son obligatorios");
+        }
+
+        Booking booking = bookingRepository.findByBookingCodeAndGuestEmailIgnoreCase(code.trim(), email.trim().toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró ninguna reserva con el código y correo especificados"));
+
+        return BookingLookupResponseDto.builder()
+                .bookingCode(booking.getBookingCode())
+                .accommodationId(booking.getAccommodation().getId())
+                .accommodationName(booking.getAccommodation().getName())
+                .checkIn(booking.getCheckIn())
+                .checkOut(booking.getCheckOut())
+                .totalNights(booking.getTotalNights())
+                .guestCount(booking.getGuestCount())
+                .pricePerNight(booking.getPricePerNight())
+                .totalAmount(booking.getTotalAmount())
+                .status(booking.getStatus())
+                .guestName(booking.getGuestName())
+                .createdAt(booking.getCreatedAt())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public BookingResponseDto getById(UUID id, UUID userId, boolean isAdmin) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + id));
+
+        boolean isTouristOwner = booking.getTourist() != null && booking.getTourist().getId().equals(userId);
+        boolean isHostOwner = booking.getAccommodation().getHost().getId().equals(userId);
+
+        if (!isAdmin && !isTouristOwner && !isHostOwner) {
+            throw new ForbiddenException("No tienes permisos para consultar esta reserva");
+        }
+
+        return mapToResponseDto(booking);
     }
 
     private String generateUniqueBookingCode() {
