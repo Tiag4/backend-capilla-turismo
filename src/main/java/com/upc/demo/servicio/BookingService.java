@@ -5,10 +5,13 @@ import com.upc.demo.config.exception.BadRequestException;
 import com.upc.demo.config.exception.ConflictException;
 import com.upc.demo.config.exception.ForbiddenException;
 import com.upc.demo.config.exception.ResourceNotFoundException;
+import com.upc.demo.dto.accommodation.AccommodationImageDto;
+import com.upc.demo.dto.accommodation.AccommodationSummaryDto;
 import com.upc.demo.dto.booking.BookingLookupResponseDto;
 import com.upc.demo.dto.booking.BookingResponseDto;
 import com.upc.demo.dto.booking.CreateBookingDto;
 import com.upc.demo.entidad.Accommodation;
+import com.upc.demo.entidad.AccommodationImage;
 import com.upc.demo.entidad.Booking;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.BookingStatus;
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -172,10 +176,39 @@ public class BookingService {
         Booking booking = bookingRepository.findByBookingCodeAndGuestEmailIgnoreCase(code.trim(), email.trim().toLowerCase())
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró ninguna reserva con el código y correo especificados"));
 
+        Accommodation accommodation = booking.getAccommodation();
+        AccommodationSummaryDto summaryDto = null;
+        if (accommodation != null) {
+            String imageUrl = null;
+            List<AccommodationImageDto> imageDtos = new ArrayList<>();
+            if (accommodation.getImages() != null && !accommodation.getImages().isEmpty()) {
+                imageDtos = accommodation.getImages().stream()
+                        .map(AccommodationImageDto::fromEntity)
+                        .collect(Collectors.toList());
+
+                imageUrl = accommodation.getImages().stream()
+                        .filter(img -> Boolean.TRUE.equals(img.getIsMain()))
+                        .map(AccommodationImage::getUrl)
+                        .findFirst()
+                        .orElse(accommodation.getImages().get(0).getUrl());
+            }
+
+            summaryDto = AccommodationSummaryDto.builder()
+                    .id(accommodation.getId())
+                    .name(accommodation.getName())
+                    .locality(accommodation.getLocality())
+                    .address(accommodation.getAddress())
+                    .imageUrl(imageUrl)
+                    .images(imageDtos)
+                    .build();
+        }
+
         return BookingLookupResponseDto.builder()
+                .id(booking.getId())
                 .bookingCode(booking.getBookingCode())
                 .accommodationId(booking.getAccommodation().getId())
                 .accommodationName(booking.getAccommodation().getName())
+                .accommodation(summaryDto)
                 .checkIn(booking.getCheckIn())
                 .checkOut(booking.getCheckOut())
                 .totalNights(booking.getTotalNights())
