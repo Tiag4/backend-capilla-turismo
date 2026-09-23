@@ -25,6 +25,7 @@ public class InvitationService {
 
     private final InvitationTokenRepository invitationTokenRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     @Transactional
     public InvitationResponseDto createInvitation(CreateInvitationDto dto, UUID adminId) {
@@ -48,6 +49,17 @@ public class InvitationService {
                 .build();
 
         InvitationToken saved = invitationTokenRepository.save(invitation);
+
+        auditService.logEvent(
+                "TOKEN_GENERATED",
+                "Emisión de token de seguridad para registro de prestador: " + cleanEmail,
+                admin.getName() + " " + admin.getLastName(),
+                admin.getEmail(),
+                cleanEmail,
+                saved.getId().toString(),
+                "Token con vigencia de 7 días generado para incorporación al padrón oficial."
+        );
+
         return InvitationResponseDto.fromEntity(saved);
     }
 
@@ -77,5 +89,27 @@ public class InvitationService {
                 .expiresAt(invitation.getExpiresAt())
                 .message("Token de invitacion valido")
                 .build();
+    }
+
+    @Transactional
+    public void deleteInvitation(UUID id, com.upc.demo.config.UserPrincipal admin) {
+        InvitationToken invitation = invitationTokenRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Token de invitacion no encontrado con ID: " + id));
+        if (invitation.getUsedAt() != null) {
+            throw new BadRequestException("No se puede revocar un token que ya fue utilizado");
+        }
+        String email = invitation.getEmail();
+        invitationTokenRepository.delete(invitation);
+
+        String opName = admin != null ? admin.getUsername() : "Administrador";
+        auditService.logEvent(
+                "TOKEN_REVOKED",
+                "Revocación de token de invitación emitido para: " + email,
+                opName,
+                admin != null ? admin.getUsername() : "admin@capilladelmonte.gov.ar",
+                email,
+                id.toString(),
+                "Token eliminado preventivamente por la administración municipal."
+        );
     }
 }
