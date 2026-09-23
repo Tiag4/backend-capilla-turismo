@@ -50,7 +50,8 @@ public class BookingController {
     public ResponseEntity<List<BookingResponseDto>> getMyBookings(
             @RequestParam(required = false) BookingStatus status,
             @AuthenticationPrincipal UserPrincipal currentUser) {
-        return ResponseEntity.ok(bookingService.getMyBookings(currentUser.getId(), status));
+        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+        return ResponseEntity.ok(bookingService.getMyBookings(currentUser.getId(), status, isAdmin));
     }
 
     @GetMapping("/tourist")

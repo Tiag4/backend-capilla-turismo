@@ -133,14 +133,27 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public List<BookingResponseDto> getMyBookings(UUID hostId, BookingStatus status) {
+    public List<BookingResponseDto> getMyBookings(UUID hostId, BookingStatus status, boolean isAdmin) {
         List<Booking> bookings;
-        if (status != null) {
-            bookings = bookingRepository.findByAccommodationHostIdAndStatusOrderByCreatedAtDesc(hostId, status);
+        if (isAdmin) {
+            if (status != null) {
+                bookings = bookingRepository.findByStatusOrderByCreatedAtDesc(status);
+            } else {
+                bookings = bookingRepository.findAllByOrderByCreatedAtDesc();
+            }
         } else {
-            bookings = bookingRepository.findByAccommodationHostIdOrderByCreatedAtDesc(hostId);
+            if (status != null) {
+                bookings = bookingRepository.findByAccommodationHostIdAndStatusOrderByCreatedAtDesc(hostId, status);
+            } else {
+                bookings = bookingRepository.findByAccommodationHostIdOrderByCreatedAtDesc(hostId);
+            }
         }
         return bookings.stream().map(this::mapToResponseDto).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingResponseDto> getMyBookings(UUID hostId, BookingStatus status) {
+        return getMyBookings(hostId, status, false);
     }
 
     @Transactional(readOnly = true)

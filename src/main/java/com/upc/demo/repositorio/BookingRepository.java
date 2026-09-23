@@ -23,6 +23,8 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     List<Booking> findByAccommodationHostIdOrderByCreatedAtDesc(UUID hostId);
     List<Booking> findByAccommodationHostIdAndStatusOrderByCreatedAtDesc(UUID hostId, BookingStatus status);
     List<Booking> findByStatus(BookingStatus status);
+    List<Booking> findAllByOrderByCreatedAtDesc();
+    List<Booking> findByStatusOrderByCreatedAtDesc(BookingStatus status);
 
     @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.accommodation.id = :accommodationId " +
            "AND b.status IN (com.upc.demo.entidad.enums.BookingStatus.PENDING, com.upc.demo.entidad.enums.BookingStatus.CONFIRMED) " +

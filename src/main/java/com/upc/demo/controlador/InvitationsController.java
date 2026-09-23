@@ -14,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/invitations")
@@ -35,6 +36,15 @@ public class InvitationsController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<InvitationResponseDto>> getAllInvitations() {
         return ResponseEntity.ok(invitationService.getAllInvitations());
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteInvitation(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal admin) {
+        invitationService.deleteInvitation(id, admin);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/validate/{token}")
