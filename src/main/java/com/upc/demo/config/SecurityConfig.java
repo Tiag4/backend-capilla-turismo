@@ -77,6 +77,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/invitations/validate/**").permitAll()
                         
+                        // Verificacion de salud (Health Check)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/health", "/health").permitAll()
+                        
                         // Catalogo de alojamientos
                         .requestMatchers("/api/v1/accommodations/my-accommodations").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/accommodations/**").permitAll()

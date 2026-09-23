@@ -1,5 +1,6 @@
 package com.upc.demo.dto.booking;
 
+import com.upc.demo.dto.accommodation.AccommodationSummaryDto;
 import com.upc.demo.entidad.enums.BookingStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,9 +18,11 @@ import java.util.UUID;
 @Builder
 public class BookingLookupResponseDto {
 
+    private UUID id;
     private String bookingCode;
     private UUID accommodationId;
     private String accommodationName;
+    private AccommodationSummaryDto accommodation;
     private LocalDate checkIn;
     private LocalDate checkOut;
     private Integer totalNights;
