@@ -1,7 +1,10 @@
 package com.upc.demo.controlador;
 
+import com.upc.demo.config.UserPrincipal;
 import com.upc.demo.config.exception.BadRequestException;
+import com.upc.demo.config.exception.ForbiddenException;
 import com.upc.demo.dto.media.UploadedMediaDto;
+import com.upc.demo.entidad.enums.Role;
 import com.upc.demo.servicio.storage.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -42,23 +46,26 @@ public class MediaController {
     @PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
     @Operation(
             summary = "Cargar imagen multimedia",
-            description = "Sube un archivo de imagen en formato JPEG, PNG o WEBP con un peso máximo de 5MB. Retorna la URL pública y el publicId asignado."
+            description = "Sube un archivo de imagen en formato JPEG, PNG o WEBP con un peso máximo de 5MB. Retorna la URL pública y el publicId asignado. Los prestadores (HOST) solo pueden subir a 'accommodations'."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Imagen subida exitosamente"),
             @ApiResponse(responseCode = "400", description = "Archivo no enviado, vacío, formato incompatible o excede los 5MB"),
             @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
-            @ApiResponse(responseCode = "403", description = "No cuenta con el rol HOST o ADMIN para cargar imágenes")
+            @ApiResponse(responseCode = "403", description = "No cuenta con el rol HOST o ADMIN o intentó subir a una carpeta no autorizada")
     })
     public ResponseEntity<UploadedMediaDto> upload(
             @Parameter(description = "Archivo binario de la imagen (máx 5MB)", required = true)
             @RequestParam("file") MultipartFile file,
-            @Parameter(description = "Carpeta lógica de destino (ej: cabins, attractions)", example = "cabins")
-            @RequestParam(value = "folder", required = false, defaultValue = "capilla-turismo") String folder) {
+            @Parameter(description = "Carpeta lógica de destino (ej: accommodations, attractions)", example = "accommodations")
+            @RequestParam(value = "folder", required = false, defaultValue = "accommodations") String folder,
+            @AuthenticationPrincipal UserPrincipal user) {
 
         validateFile(file);
 
-        UploadedMediaDto result = storageService.upload(file, folder);
+        String targetFolder = resolveFolderForUser(folder, user);
+
+        UploadedMediaDto result = storageService.upload(file, targetFolder);
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
@@ -120,5 +127,18 @@ public class MediaController {
             return publicId.substring(1);
         }
         return publicId;
+    }
+
+    private String resolveFolderForUser(String folder, UserPrincipal user) {
+        String requestedFolder = (folder != null && !folder.isBlank()) ? folder.trim().toLowerCase() : "accommodations";
+
+        if (user != null && user.getRole() == Role.HOST) {
+            if (!requestedFolder.equals("accommodations") && !requestedFolder.equals("capilla-turismo/accommodations")) {
+                throw new ForbiddenException("Los prestadores (HOST) solo tienen permitido subir imágenes a la carpeta de alojamientos ('accommodations')");
+            }
+            return "accommodations";
+        }
+
+        return requestedFolder;
     }
 }
