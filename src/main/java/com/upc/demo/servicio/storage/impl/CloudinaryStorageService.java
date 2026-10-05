@@ -34,7 +34,13 @@ public class CloudinaryStorageService implements StorageService {
             Map<String, Object> params = ObjectUtils.asMap(
                     "folder", safeFolder,
                     "resource_type", "image",
-                    "overwrite", true
+                    "overwrite", true,
+                    "transformation", new com.cloudinary.Transformation<>()
+                            .width(1920)
+                            .height(1080)
+                            .crop("limit")
+                            .quality("auto")
+                            .fetchFormat("auto")
             );
 
             @SuppressWarnings("unchecked")

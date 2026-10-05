@@ -10,8 +10,10 @@ import com.upc.demo.entidad.AttractionImage;
 import com.upc.demo.entidad.enums.AttractionCategory;
 import com.upc.demo.repositorio.AttractionImageRepository;
 import com.upc.demo.repositorio.AttractionRepository;
+import com.upc.demo.servicio.storage.StorageService;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,12 +23,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AttractionService {
 
     private final AttractionRepository attractionRepository;
     private final AttractionImageRepository attractionImageRepository;
+    private final StorageService storageService;
 
     @Transactional(readOnly = true)
     public List<AttractionResponseDto> getAll(AttractionCategory category,
@@ -143,6 +147,20 @@ public class AttractionService {
     @Transactional
     public void delete(UUID id) {
         Attraction attraction = findAttractionById(id);
+
+        if (attraction.getImages() != null && !attraction.getImages().isEmpty()) {
+            for (AttractionImage image : attraction.getImages()) {
+                if (image.getPublicId() != null && !image.getPublicId().isBlank()) {
+                    try {
+                        storageService.delete(image.getPublicId());
+                    } catch (Exception e) {
+                        log.warn("No se pudo eliminar la imagen del almacenamiento remoto (publicId: {}): {}",
+                                image.getPublicId(), e.getMessage());
+                    }
+                }
+            }
+        }
+
         attractionRepository.delete(attraction);
     }
 
@@ -167,6 +185,15 @@ public class AttractionService {
 
         AttractionImage image = attractionImageRepository.findByIdAndAttractionId(imageId, id)
                 .orElseThrow(() -> new ResourceNotFoundException("Imagen no encontrada con ID: " + imageId + " para el paseo especificado"));
+
+        if (image.getPublicId() != null && !image.getPublicId().isBlank()) {
+            try {
+                storageService.delete(image.getPublicId());
+            } catch (Exception e) {
+                log.warn("No se pudo eliminar la imagen del almacenamiento remoto (publicId: {}): {}",
+                        image.getPublicId(), e.getMessage());
+            }
+        }
 
         attractionImageRepository.delete(image);
     }

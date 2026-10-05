@@ -7,11 +7,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
 import java.time.LocalDateTime;
+import java.util.Iterator;
 import java.util.UUID;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
 
 /**
  * Adaptador de almacenamiento en disco local (desarrollo, fallback o VPS).
@@ -55,21 +64,21 @@ public class LocalStorageService implements StorageService {
                 throw new BadRequestException("No se permite almacenar archivos fuera del directorio de destino");
             }
 
-            try (InputStream inputStream = file.getInputStream()) {
-                Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
-            }
+            optimizeAndSave(file, destinationFile, extension);
+            long finalSizeBytes = Files.exists(destinationFile) ? Files.size(destinationFile) : file.getSize();
 
             String publicId = safeFolder + "/" + uniqueFileName;
             String relativeUrl = "/uploads/" + safeFolder + "/" + uniqueFileName;
             String publicUrl = this.baseUrl.isEmpty() ? relativeUrl : this.baseUrl + relativeUrl;
 
-            log.info("Archivo local guardado con éxito. PublicId: {}, Path: {}", publicId, destinationFile);
+            log.info("Archivo local guardado y optimizado con éxito. PublicId: {}, Tamaño final: {} bytes, Path: {}",
+                    publicId, finalSizeBytes, destinationFile);
 
             return UploadedMediaDto.builder()
                     .publicId(publicId)
                     .url(publicUrl)
                     .format(extension.toLowerCase())
-                    .sizeBytes(file.getSize())
+                    .sizeBytes(finalSizeBytes)
                     .createdAt(LocalDateTime.now())
                     .build();
 
@@ -110,5 +119,88 @@ public class LocalStorageService implements StorageService {
             return filename.substring(dotIndex + 1);
         }
         return "";
+    }
+
+    private void optimizeAndSave(MultipartFile file, Path destinationFile, String extension) throws IOException {
+        String ext = extension.toLowerCase();
+        if (!ext.equals("jpg") && !ext.equals("jpeg") && !ext.equals("png")) {
+            try (InputStream inputStream = file.getInputStream()) {
+                Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
+            }
+            return;
+        }
+
+        try {
+            BufferedImage originalImage = ImageIO.read(file.getInputStream());
+            if (originalImage == null) {
+                try (InputStream inputStream = file.getInputStream()) {
+                    Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
+                }
+                return;
+            }
+
+            int originalWidth = originalImage.getWidth();
+            int originalHeight = originalImage.getHeight();
+            int maxWidth = 1920;
+            int maxHeight = 1080;
+
+            boolean needsResize = originalWidth > maxWidth || originalHeight > maxHeight;
+            int targetWidth = originalWidth;
+            int targetHeight = originalHeight;
+
+            if (needsResize) {
+                double ratio = Math.min((double) maxWidth / originalWidth, (double) maxHeight / originalHeight);
+                targetWidth = Math.max(1, (int) Math.round(originalWidth * ratio));
+                targetHeight = Math.max(1, (int) Math.round(originalHeight * ratio));
+            }
+
+            int imageType = (ext.equals("png") && originalImage.getColorModel().hasAlpha())
+                    ? BufferedImage.TYPE_INT_ARGB
+                    : BufferedImage.TYPE_INT_RGB;
+
+            BufferedImage resizedImage = new BufferedImage(targetWidth, targetHeight, imageType);
+            Graphics2D g2d = resizedImage.createGraphics();
+            try {
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.drawImage(originalImage, 0, 0, targetWidth, targetHeight, null);
+            } finally {
+                g2d.dispose();
+            }
+
+            if (ext.equals("jpg") || ext.equals("jpeg")) {
+                saveOptimizedJpeg(resizedImage, destinationFile, 0.85f);
+            } else {
+                ImageIO.write(resizedImage, "png", destinationFile.toFile());
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo optimizar la imagen con ImageIO, guardando archivo original: {}", e.getMessage());
+            try (InputStream inputStream = file.getInputStream()) {
+                Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+    }
+
+    private void saveOptimizedJpeg(BufferedImage image, Path destinationFile, float quality) throws IOException {
+        Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
+        if (!writers.hasNext()) {
+            ImageIO.write(image, "jpg", destinationFile.toFile());
+            return;
+        }
+
+        ImageWriter writer = writers.next();
+        ImageWriteParam param = writer.getDefaultWriteParam();
+        if (param.canWriteCompressed()) {
+            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            param.setCompressionQuality(quality);
+        }
+
+        try (ImageOutputStream ios = ImageIO.createImageOutputStream(destinationFile.toFile())) {
+            writer.setOutput(ios);
+            writer.write(null, new IIOImage(image, null, null), param);
+        } finally {
+            writer.dispose();
+        }
     }
 }
