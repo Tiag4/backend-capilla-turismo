@@ -80,6 +80,9 @@ public class SecurityConfig {
                         // Verificacion de salud (Health Check)
                         .requestMatchers(HttpMethod.GET, "/api/v1/health", "/health").permitAll()
                         
+                        // Archivos de medios estaticos subidos localmente
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        
                         // Catalogo de alojamientos
                         .requestMatchers("/api/v1/accommodations/my-accommodations").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/accommodations/**").permitAll()
