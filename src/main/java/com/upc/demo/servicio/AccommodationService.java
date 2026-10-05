@@ -14,7 +14,9 @@ import com.upc.demo.entidad.enums.AccommodationType;
 import com.upc.demo.repositorio.AccommodationImageRepository;
 import com.upc.demo.repositorio.AccommodationRepository;
 import com.upc.demo.repositorio.UserRepository;
+import com.upc.demo.servicio.storage.StorageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AccommodationService {
@@ -32,6 +35,7 @@ public class AccommodationService {
     private final AccommodationRepository accommodationRepository;
     private final AccommodationImageRepository accommodationImageRepository;
     private final UserRepository userRepository;
+    private final StorageService storageService;
 
     @Transactional(readOnly = true)
     public List<AccommodationResponseDto> getAll(AccommodationType type,
@@ -195,6 +199,20 @@ public class AccommodationService {
     public void delete(UUID id, UUID hostId, boolean isAdmin) {
         Accommodation accommodation = findAccommodationById(id);
         validateOwnership(accommodation, hostId, isAdmin);
+
+        if (accommodation.getImages() != null && !accommodation.getImages().isEmpty()) {
+            for (AccommodationImage image : accommodation.getImages()) {
+                if (image.getPublicId() != null && !image.getPublicId().isBlank()) {
+                    try {
+                        storageService.delete(image.getPublicId());
+                    } catch (Exception e) {
+                        log.warn("No se pudo eliminar la imagen del almacenamiento remoto (publicId: {}): {}",
+                                image.getPublicId(), e.getMessage());
+                    }
+                }
+            }
+        }
+
         accommodationRepository.delete(accommodation);
     }
 
@@ -229,6 +247,15 @@ public class AccommodationService {
 
         AccommodationImage image = accommodationImageRepository.findByIdAndAccommodationId(imageId, id)
                 .orElseThrow(() -> new ResourceNotFoundException("Imagen no encontrada con ID: " + imageId + " para el alojamiento especificado"));
+
+        if (image.getPublicId() != null && !image.getPublicId().isBlank()) {
+            try {
+                storageService.delete(image.getPublicId());
+            } catch (Exception e) {
+                log.warn("No se pudo eliminar la imagen del almacenamiento remoto (publicId: {}): {}",
+                        image.getPublicId(), e.getMessage());
+            }
+        }
 
         accommodationImageRepository.delete(image);
     }

@@ -109,6 +109,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponseDto> handleMaxSizeException(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        ErrorResponseDto error = ErrorResponseDto.builder()
+                .statusCode(HttpStatus.BAD_REQUEST.value())
+                .message("El archivo excede el tamaño máximo permitido de 5MB")
+                .error("Payload Too Large")
+                .timestamp(LocalDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleGeneric(Exception ex) {
         ErrorResponseDto error = ErrorResponseDto.builder()
