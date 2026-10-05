@@ -29,7 +29,9 @@ public class CloudinaryStorageService implements StorageService {
         }
 
         try {
-            String safeFolder = (folder != null && !folder.isBlank()) ? folder : "capilla-turismo";
+            String baseFolder = "capilla-turismo";
+            String targetFolder = (folder != null && !folder.isBlank()) ? folder.trim() : "general";
+            String safeFolder = targetFolder.startsWith(baseFolder) ? targetFolder : baseFolder + "/" + targetFolder;
 
             Map<String, Object> params = ObjectUtils.asMap(
                     "folder", safeFolder,

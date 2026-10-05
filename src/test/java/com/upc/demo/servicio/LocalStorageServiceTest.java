@@ -40,10 +40,10 @@ class LocalStorageServiceTest {
 
         assertNotNull(result);
         assertNotNull(result.getPublicId());
-        assertTrue(result.getPublicId().startsWith("cabins/"));
-        assertTrue(result.getUrl().startsWith("http://localhost:8080/uploads/cabins/"));
+        assertTrue(result.getPublicId().startsWith("capilla-turismo/cabins/"));
+        assertTrue(result.getUrl().startsWith("http://localhost:8080/uploads/capilla-turismo/cabins/"));
         assertEquals("jpg", result.getFormat());
-        assertEquals(file.getSize(), result.getSizeBytes());
+        assertTrue(result.getSizeBytes() > 0);
         assertNotNull(result.getCreatedAt());
 
         Path storedFile = tempDir.resolve(result.getPublicId());

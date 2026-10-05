@@ -51,7 +51,9 @@ public class LocalStorageService implements StorageService {
 
         String originalFilename = StringUtils.cleanPath(file.getOriginalFilename() != null ? file.getOriginalFilename() : "image");
         String extension = getFileExtension(originalFilename);
-        String safeFolder = (folder != null && !folder.isBlank()) ? folder.replaceAll("[^a-zA-Z0-9_-]", "") : "general";
+        String rawFolder = (folder != null && !folder.isBlank()) ? folder.replaceAll("[^a-zA-Z0-9/_-]", "") : "general";
+        String baseFolder = "capilla-turismo";
+        String safeFolder = rawFolder.startsWith(baseFolder) ? rawFolder : baseFolder + "/" + rawFolder;
 
         String uniqueFileName = UUID.randomUUID() + (extension.isEmpty() ? "" : "." + extension);
         Path targetFolder = this.rootLocation.resolve(safeFolder).normalize();
