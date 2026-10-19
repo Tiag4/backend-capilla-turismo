@@ -1,6 +1,7 @@
 package com.upc.demo.dto.attraction;
 
 import com.upc.demo.entidad.enums.AttractionCategory;
+import com.upc.demo.entidad.enums.AttractionStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -47,6 +48,14 @@ public class CreateAttractionDto {
     private Double latitude;
 
     private Double longitude;
+
+    @Builder.Default
+    private AttractionStatus status = AttractionStatus.OPEN;
+
+    private String statusNotice;
+
+    @Builder.Default
+    private Boolean isFeatured = false;
 
     @Valid
     @Builder.Default

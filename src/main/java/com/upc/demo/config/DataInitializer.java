@@ -5,6 +5,11 @@ import com.upc.demo.entidad.AccommodationImage;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.AccommodationType;
 import com.upc.demo.entidad.enums.Role;
+import com.upc.demo.entidad.Attraction;
+import com.upc.demo.entidad.AttractionImage;
+import com.upc.demo.entidad.enums.AttractionCategory;
+import com.upc.demo.entidad.enums.AttractionStatus;
+import com.upc.demo.repositorio.AttractionRepository;
 import com.upc.demo.repositorio.AccommodationRepository;
 import com.upc.demo.repositorio.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,12 +32,14 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AccommodationRepository accommodationRepository;
+    private final AttractionRepository attractionRepository;
 
     @Override
     @Transactional
     public void run(String... args) {
         initAdmin();
         initHost();
+        initAttractions();
     }
 
     private void initAdmin() {
@@ -107,4 +114,159 @@ public class DataInitializer implements CommandLineRunner {
             log.info("✔ Alojamiento de prueba asignado al cabañero: Cabañas Pircas del Uritorco");
         }
     }
+
+    private void initAttractions() {
+        List<Attraction> list = new ArrayList<>();
+
+            // 1. Cerro Uritorco
+            Attraction uritorco = Attraction.builder()
+                    .name("Cerro Uritorco")
+                    .description("El pico más emblemático del Valle de Punilla con 1.979 msnm. Sendero de alta exigencia física.")
+                    .category(AttractionCategory.HILL)
+                    .difficulty("ALTA")
+                    .estimatedDuration("7 horas ida y vuelta")
+                    .howToGet("A 3 km del centro por calle Sabattini hasta el Parador La Toma.")
+                    .requiresGuide(false)
+                    .admissionFee(BigDecimal.valueOf(15000))
+                    .latitude(-30.8522)
+                    .longitude(-64.4789)
+                    .status(AttractionStatus.OPEN)
+                    .statusNotice(null)
+                    .isFeatured(true)
+                    .images(new ArrayList<>())
+                    .build();
+            uritorco.getImages().add(AttractionImage.builder()
+                    .url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80")
+                    .publicId("uritorco_cover")
+                    .attraction(uritorco)
+                    .build());
+            list.add(uritorco);
+
+            // 2. Parque Los Terrones
+            Attraction terrones = Attraction.builder()
+                    .name("Parque Los Terrones")
+                    .description("Cañadones rojizos, laberintos geológicos esculpidos por viento y agua hace millones de años.")
+                    .category(AttractionCategory.NATURE_TRAIL)
+                    .difficulty("MEDIA")
+                    .estimatedDuration("2.5 a 3 horas")
+                    .howToGet("Ruta Nacional 38 Km 92, a 14 km al norte de Capilla del Monte.")
+                    .requiresGuide(true)
+                    .admissionFee(BigDecimal.valueOf(8000))
+                    .latitude(-30.7711)
+                    .longitude(-64.4822)
+                    .status(AttractionStatus.OPEN)
+                    .statusNotice(null)
+                    .isFeatured(true)
+                    .images(new ArrayList<>())
+                    .build();
+            terrones.getImages().add(AttractionImage.builder()
+                    .url("https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80")
+                    .publicId("terrones_cover")
+                    .attraction(terrones)
+                    .build());
+            list.add(terrones);
+
+            // 3. El Zapato
+            Attraction zapato = Attraction.builder()
+                    .name("El Zapato")
+                    .description("Geoforma natural modelada por la erosión eólica con vistas panorámicas privilegiadas al lago del dique.")
+                    .category(AttractionCategory.CULTURAL)
+                    .difficulty("BAJA")
+                    .estimatedDuration("1 hora")
+                    .howToGet("A 1.5 km de la Plaza San Martín, acceso pavimentado por calle Hipólito Yrigoyen.")
+                    .requiresGuide(false)
+                    .admissionFee(BigDecimal.ZERO)
+                    .latitude(-30.8625)
+                    .longitude(-64.5386)
+                    .status(AttractionStatus.OPEN)
+                    .statusNotice(null)
+                    .isFeatured(true)
+                    .images(new ArrayList<>())
+                    .build();
+            zapato.getImages().add(AttractionImage.builder()
+                    .url("https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80")
+                    .publicId("zapato_cover")
+                    .attraction(zapato)
+                    .build());
+            list.add(zapato);
+
+            // 4. Dique El Cajón
+            Attraction cajon = Attraction.builder()
+                    .name("Dique El Cajón")
+                    .description("Espejo de agua ideal para pesca deportiva sin motor, avistaje de aves y paseos en kayak.")
+                    .category(AttractionCategory.RIVER_BEACH)
+                    .difficulty("BAJA")
+                    .estimatedDuration("Paseo libre")
+                    .howToGet("A 3.5 km del centro, siguiendo por Av. El Cajón.")
+                    .requiresGuide(false)
+                    .admissionFee(BigDecimal.ZERO)
+                    .latitude(-30.8719)
+                    .longitude(-64.5492)
+                    .status(AttractionStatus.OPEN)
+                    .statusNotice(null)
+                    .isFeatured(false)
+                    .images(new ArrayList<>())
+                    .build();
+            cajon.getImages().add(AttractionImage.builder()
+                    .url("https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=80")
+                    .publicId("cajon_cover")
+                    .attraction(cajon)
+                    .build());
+            list.add(cajon);
+
+            // 5. Balneario La Toma
+            Attraction laToma = Attraction.builder()
+                    .name("Balneario La Toma")
+                    .description("Ollas naturales, cascadas de agua de vertiente y frondosa arboleda autóctona sobre el Río Calabalumba.")
+                    .category(AttractionCategory.RIVER_BEACH)
+                    .difficulty("BAJA")
+                    .estimatedDuration("Medio día")
+                    .howToGet("Al final de la calle Sabattini, en la base oeste del Cerro Uritorco.")
+                    .requiresGuide(false)
+                    .admissionFee(BigDecimal.valueOf(2500))
+                    .latitude(-30.8548)
+                    .longitude(-64.5021)
+                    .status(AttractionStatus.WEATHER_RESTRICTED)
+                    .statusNotice("Precaución por caudal crecido en temporada de lluvias.")
+                    .isFeatured(false)
+                    .images(new ArrayList<>())
+                    .build();
+            laToma.getImages().add(AttractionImage.builder()
+                    .url("https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?auto=format&fit=crop&w=1200&q=80")
+                    .publicId("latoma_cover")
+                    .attraction(laToma)
+                    .build());
+            list.add(laToma);
+
+            // 6. Los Mogotes
+            Attraction mogotes = Attraction.builder()
+                    .name("Los Mogotes y Paso del Indio")
+                    .description("Garganta natural de paredes rocosas de granito con senderos y zona de escalada deportiva.")
+                    .category(AttractionCategory.NATURE_TRAIL)
+                    .difficulty("MEDIA")
+                    .estimatedDuration("2 horas")
+                    .howToGet("A 4 km al noroeste del centro sobre el Río Dolores.")
+                    .requiresGuide(false)
+                    .admissionFee(BigDecimal.valueOf(3000))
+                    .latitude(-30.8405)
+                    .longitude(-64.5498)
+                    .status(AttractionStatus.OPEN)
+                    .statusNotice(null)
+                    .isFeatured(false)
+                    .images(new ArrayList<>())
+                    .build();
+            mogotes.getImages().add(AttractionImage.builder()
+                    .url("https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80")
+                    .publicId("mogotes_cover")
+                    .attraction(mogotes)
+                    .build());
+            list.add(mogotes);
+
+            for (Attraction a : list) {
+                if (!attractionRepository.existsByName(a.getName())) {
+                    attractionRepository.save(a);
+                    log.info("✔ Atractivo inicial registrado en base de datos: {}", a.getName());
+                }
+            }
+        }
 }

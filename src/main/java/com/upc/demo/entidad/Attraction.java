@@ -1,6 +1,7 @@
 package com.upc.demo.entidad;
 
 import com.upc.demo.entidad.enums.AttractionCategory;
+import com.upc.demo.entidad.enums.AttractionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -52,6 +53,18 @@ public class Attraction {
 
     private Double latitude;
     private Double longitude;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    @Builder.Default
+    private AttractionStatus status = AttractionStatus.OPEN;
+
+    @Column(name = "status_notice")
+    private String statusNotice;
+
+    @Column(name = "is_featured")
+    @Builder.Default
+    private Boolean isFeatured = false;
 
     @OneToMany(mappedBy = "attraction", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

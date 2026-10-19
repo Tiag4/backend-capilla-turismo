@@ -13,4 +13,5 @@ import java.util.UUID;
 public interface AttractionRepository extends JpaRepository<Attraction, UUID>, JpaSpecificationExecutor<Attraction> {
     List<Attraction> findByCategory(AttractionCategory category);
     List<Attraction> findByDifficulty(String difficulty);
+    boolean existsByName(String name);
 }

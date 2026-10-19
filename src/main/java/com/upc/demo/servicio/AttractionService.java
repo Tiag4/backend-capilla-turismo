@@ -87,6 +87,9 @@ public class AttractionService {
                 .admissionFee(dto.getAdmissionFee())
                 .latitude(dto.getLatitude())
                 .longitude(dto.getLongitude())
+                .status(dto.getStatus() != null ? dto.getStatus() : com.upc.demo.entidad.enums.AttractionStatus.OPEN)
+                .statusNotice(dto.getStatusNotice())
+                .isFeatured(dto.getIsFeatured() != null ? dto.getIsFeatured() : false)
                 .images(new ArrayList<>())
                 .build();
 
@@ -138,6 +141,15 @@ public class AttractionService {
         }
         if (dto.getLongitude() != null) {
             attraction.setLongitude(dto.getLongitude());
+        }
+        if (dto.getStatus() != null) {
+            attraction.setStatus(dto.getStatus());
+        }
+        if (dto.getStatusNotice() != null) {
+            attraction.setStatusNotice(dto.getStatusNotice());
+        }
+        if (dto.getIsFeatured() != null) {
+            attraction.setIsFeatured(dto.getIsFeatured());
         }
 
         Attraction updated = attractionRepository.save(attraction);

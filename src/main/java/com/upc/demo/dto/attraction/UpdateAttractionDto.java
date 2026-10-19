@@ -1,6 +1,7 @@
 package com.upc.demo.dto.attraction;
 
 import com.upc.demo.entidad.enums.AttractionCategory;
+import com.upc.demo.entidad.enums.AttractionStatus;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -39,4 +40,10 @@ public class UpdateAttractionDto {
     private Double latitude;
 
     private Double longitude;
+
+    private AttractionStatus status;
+
+    private String statusNotice;
+
+    private Boolean isFeatured;
 }

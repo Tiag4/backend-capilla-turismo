@@ -31,6 +31,9 @@ public class AttractionResponseDto {
     private BigDecimal admissionFee;
     private Double latitude;
     private Double longitude;
+    private com.upc.demo.entidad.enums.AttractionStatus status;
+    private String statusNotice;
+    private Boolean isFeatured;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -60,6 +63,9 @@ public class AttractionResponseDto {
                 .admissionFee(entity.getAdmissionFee())
                 .latitude(entity.getLatitude())
                 .longitude(entity.getLongitude())
+                .status(entity.getStatus() != null ? entity.getStatus() : com.upc.demo.entidad.enums.AttractionStatus.OPEN)
+                .statusNotice(entity.getStatusNotice())
+                .isFeatured(entity.getIsFeatured() != null ? entity.getIsFeatured() : false)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .images(imageDtos)
