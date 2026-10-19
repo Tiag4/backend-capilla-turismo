@@ -31,4 +31,12 @@ public class UsersController {
     public ResponseEntity<UserResponseDto> getUserById(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponseDto> updateUserStatus(
+            @PathVariable UUID id,
+            @RequestParam boolean isActive) {
+        return ResponseEntity.ok(userService.updateUserStatus(id, isActive));
+    }
 }
