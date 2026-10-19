@@ -33,6 +33,11 @@ public class AccommodationResponseDto {
     private Integer maxGuests;
     private List<String> amenities;
     private Boolean isActive;
+    private Integer downPaymentPercentage;
+    private String bankAccountHolder;
+    private String bankCbu;
+    private String bankAlias;
+    private String bankName;
     private UUID hostId;
     private String hostName;
     private UserProfileDto host;
@@ -75,6 +80,11 @@ public class AccommodationResponseDto {
                 .maxGuests(entity.getMaxGuests())
                 .amenities(entity.getAmenities() != null ? new ArrayList<>(entity.getAmenities()) : new ArrayList<>())
                 .isActive(entity.getIsActive())
+                .downPaymentPercentage(entity.getDownPaymentPercentage() != null ? entity.getDownPaymentPercentage() : 50)
+                .bankAccountHolder(entity.getBankAccountHolder())
+                .bankCbu(entity.getBankCbu())
+                .bankAlias(entity.getBankAlias())
+                .bankName(entity.getBankName())
                 .hostId(hostUuid)
                 .hostName(hostFullName)
                 .host(hostDto)

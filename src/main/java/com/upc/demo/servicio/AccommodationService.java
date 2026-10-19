@@ -131,6 +131,11 @@ public class AccommodationService {
                 .pricePerNight(dto.getPricePerNight())
                 .maxGuests(dto.getMaxGuests())
                 .amenities(dto.getAmenities() != null ? new ArrayList<>(dto.getAmenities()) : new ArrayList<>())
+                .downPaymentPercentage(dto.getDownPaymentPercentage() != null ? dto.getDownPaymentPercentage() : 50)
+                .bankAccountHolder(dto.getBankAccountHolder() != null ? dto.getBankAccountHolder().trim() : null)
+                .bankCbu(dto.getBankCbu() != null ? dto.getBankCbu().trim() : null)
+                .bankAlias(dto.getBankAlias() != null ? dto.getBankAlias().trim() : null)
+                .bankName(dto.getBankName() != null ? dto.getBankName().trim() : null)
                 .isActive(true)
                 .host(host)
                 .images(new ArrayList<>())
@@ -189,6 +194,21 @@ public class AccommodationService {
         }
         if (dto.getIsActive() != null) {
             accommodation.setIsActive(dto.getIsActive());
+        }
+        if (dto.getDownPaymentPercentage() != null) {
+            accommodation.setDownPaymentPercentage(dto.getDownPaymentPercentage());
+        }
+        if (dto.getBankAccountHolder() != null) {
+            accommodation.setBankAccountHolder(dto.getBankAccountHolder().trim());
+        }
+        if (dto.getBankCbu() != null) {
+            accommodation.setBankCbu(dto.getBankCbu().trim());
+        }
+        if (dto.getBankAlias() != null) {
+            accommodation.setBankAlias(dto.getBankAlias().trim());
+        }
+        if (dto.getBankName() != null) {
+            accommodation.setBankName(dto.getBankName().trim());
         }
 
         Accommodation updated = accommodationRepository.save(accommodation);

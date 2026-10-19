@@ -48,6 +48,15 @@ public class Booking {
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "down_payment_percentage")
+    private Integer downPaymentPercentage;
+
+    @Column(name = "down_payment_amount", precision = 10, scale = 2)
+    private BigDecimal downPaymentAmount;
+
+    @Column(name = "remaining_balance", precision = 10, scale = 2)
+    private BigDecimal remainingBalance;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default

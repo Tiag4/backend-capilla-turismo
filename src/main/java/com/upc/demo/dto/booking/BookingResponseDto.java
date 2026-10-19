@@ -28,6 +28,13 @@ public class BookingResponseDto {
     private Integer guestCount;
     private BigDecimal pricePerNight;
     private BigDecimal totalAmount;
+    private Integer downPaymentPercentage;
+    private BigDecimal downPaymentAmount;
+    private BigDecimal remainingBalance;
+    private String bankAccountHolder;
+    private String bankCbu;
+    private String bankAlias;
+    private String bankName;
     private BookingStatus status;
     private String guestName;
     private String guestEmail;
