@@ -20,6 +20,11 @@ public class AccommodationSummaryDto {
     private String locality;
     private String address;
     private String imageUrl;
+    private Integer downPaymentPercentage;
+    private String bankAccountHolder;
+    private String bankCbu;
+    private String bankAlias;
+    private String bankName;
 
     @Builder.Default
     private List<AccommodationImageDto> images = new ArrayList<>();

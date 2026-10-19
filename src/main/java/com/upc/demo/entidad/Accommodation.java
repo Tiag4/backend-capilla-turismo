@@ -61,6 +61,22 @@ public class Accommodation {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "down_payment_percentage", nullable = false)
+    @Builder.Default
+    private Integer downPaymentPercentage = 50;
+
+    @Column(name = "bank_account_holder", length = 150)
+    private String bankAccountHolder;
+
+    @Column(name = "bank_cbu", length = 30)
+    private String bankCbu;
+
+    @Column(name = "bank_alias", length = 60)
+    private String bankAlias;
+
+    @Column(name = "bank_name", length = 100)
+    private String bankName;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "host_id", nullable = false)
     private User host;

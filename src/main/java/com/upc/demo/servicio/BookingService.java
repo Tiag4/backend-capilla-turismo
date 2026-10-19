@@ -77,8 +77,12 @@ public class BookingService {
         // 5. Generación de Código Idempotente: CAP-<AÑO>-<4_DIGITOS_ALEATORIOS>
         String bookingCode = generateUniqueBookingCode();
 
-        // 6. Cálculo de importe
+        // 6. Cálculo de importe y seña
         BigDecimal totalAmount = accommodation.getPricePerNight().multiply(BigDecimal.valueOf(totalNights));
+        int downPaymentPct = accommodation.getDownPaymentPercentage() != null ? accommodation.getDownPaymentPercentage() : 50;
+        BigDecimal downPaymentAmount = totalAmount.multiply(BigDecimal.valueOf(downPaymentPct))
+                .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal remainingBalance = totalAmount.subtract(downPaymentAmount);
 
         // 7. Asociar turista si está autenticado
         User tourist = null;
@@ -97,6 +101,9 @@ public class BookingService {
                 .guestCount(dto.getGuestCount())
                 .pricePerNight(accommodation.getPricePerNight())
                 .totalAmount(totalAmount)
+                .downPaymentPercentage(downPaymentPct)
+                .downPaymentAmount(downPaymentAmount)
+                .remainingBalance(remainingBalance)
                 .status(BookingStatus.PENDING)
                 .guestName(dto.getGuestName().trim())
                 .guestEmail(dto.getGuestEmail().trim().toLowerCase())
@@ -199,9 +206,24 @@ public class BookingService {
                     .locality(accommodation.getLocality())
                     .address(accommodation.getAddress())
                     .imageUrl(imageUrl)
+                    .downPaymentPercentage(accommodation.getDownPaymentPercentage())
+                    .bankAccountHolder(accommodation.getBankAccountHolder())
+                    .bankCbu(accommodation.getBankCbu())
+                    .bankAlias(accommodation.getBankAlias())
+                    .bankName(accommodation.getBankName())
                     .images(imageDtos)
                     .build();
         }
+
+        int pct = booking.getDownPaymentPercentage() != null
+                ? booking.getDownPaymentPercentage()
+                : (booking.getAccommodation().getDownPaymentPercentage() != null ? booking.getAccommodation().getDownPaymentPercentage() : 50);
+        BigDecimal dpAmount = booking.getDownPaymentAmount() != null
+                ? booking.getDownPaymentAmount()
+                : booking.getTotalAmount().multiply(BigDecimal.valueOf(pct)).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal balance = booking.getRemainingBalance() != null
+                ? booking.getRemainingBalance()
+                : booking.getTotalAmount().subtract(dpAmount);
 
         return BookingLookupResponseDto.builder()
                 .id(booking.getId())
@@ -215,6 +237,13 @@ public class BookingService {
                 .guestCount(booking.getGuestCount())
                 .pricePerNight(booking.getPricePerNight())
                 .totalAmount(booking.getTotalAmount())
+                .downPaymentPercentage(pct)
+                .downPaymentAmount(dpAmount)
+                .remainingBalance(balance)
+                .bankAccountHolder(booking.getAccommodation().getBankAccountHolder())
+                .bankCbu(booking.getAccommodation().getBankCbu())
+                .bankAlias(booking.getAccommodation().getBankAlias())
+                .bankName(booking.getAccommodation().getBankName())
                 .status(booking.getStatus())
                 .guestName(booking.getGuestName())
                 .createdAt(booking.getCreatedAt())
@@ -247,6 +276,16 @@ public class BookingService {
     }
 
     public BookingResponseDto mapToResponseDto(Booking booking) {
+        int pct = booking.getDownPaymentPercentage() != null
+                ? booking.getDownPaymentPercentage()
+                : (booking.getAccommodation().getDownPaymentPercentage() != null ? booking.getAccommodation().getDownPaymentPercentage() : 50);
+        BigDecimal dpAmount = booking.getDownPaymentAmount() != null
+                ? booking.getDownPaymentAmount()
+                : booking.getTotalAmount().multiply(BigDecimal.valueOf(pct)).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal balance = booking.getRemainingBalance() != null
+                ? booking.getRemainingBalance()
+                : booking.getTotalAmount().subtract(dpAmount);
+
         return BookingResponseDto.builder()
                 .id(booking.getId())
                 .bookingCode(booking.getBookingCode())
@@ -259,6 +298,13 @@ public class BookingService {
                 .guestCount(booking.getGuestCount())
                 .pricePerNight(booking.getPricePerNight())
                 .totalAmount(booking.getTotalAmount())
+                .downPaymentPercentage(pct)
+                .downPaymentAmount(dpAmount)
+                .remainingBalance(balance)
+                .bankAccountHolder(booking.getAccommodation().getBankAccountHolder())
+                .bankCbu(booking.getAccommodation().getBankCbu())
+                .bankAlias(booking.getAccommodation().getBankAlias())
+                .bankName(booking.getAccommodation().getBankName())
                 .status(booking.getStatus())
                 .guestName(booking.getGuestName())
                 .guestEmail(booking.getGuestEmail())

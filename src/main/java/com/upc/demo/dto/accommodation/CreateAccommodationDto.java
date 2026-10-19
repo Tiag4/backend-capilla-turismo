@@ -49,6 +49,23 @@ public class CreateAccommodationDto {
     @Builder.Default
     private List<String> amenities = new ArrayList<>();
 
+    @Min(value = 0, message = "El porcentaje de seña no puede ser negativo")
+    @Max(value = 100, message = "El porcentaje de seña no puede superar el 100%")
+    @Builder.Default
+    private Integer downPaymentPercentage = 50;
+
+    @Size(max = 150, message = "El titular de la cuenta no puede exceder 150 caracteres")
+    private String bankAccountHolder;
+
+    @Size(max = 30, message = "El CBU/CVU no puede exceder 30 caracteres")
+    private String bankCbu;
+
+    @Size(max = 60, message = "El alias bancario no puede exceder 60 caracteres")
+    private String bankAlias;
+
+    @Size(max = 100, message = "El nombre de la entidad bancaria no puede exceder 100 caracteres")
+    private String bankName;
+
     @Valid
     @Builder.Default
     private List<AccommodationImageDto> images = new ArrayList<>();
