@@ -89,6 +89,9 @@ public class SecurityConfig {
                         
                         // Catalogo publico de atractivos turisticos
                         .requestMatchers(HttpMethod.GET, "/api/v1/attractions/**").permitAll()
+
+                        // Alertas meteorologicas y de seguridad publica
+                        .requestMatchers(HttpMethod.GET, "/api/v1/alerts/active").permitAll()
                         
                         // Reservas: creacion y consulta publica (lookup)
                         .requestMatchers(HttpMethod.POST, "/api/v1/bookings").permitAll()
