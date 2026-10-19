@@ -61,7 +61,7 @@ public class Accommodation {
     @Builder.Default
     private Boolean isActive = true;
 
-    @Column(name = "down_payment_percentage", nullable = false)
+    @Column(name = "down_payment_percentage")
     @Builder.Default
     private Integer downPaymentPercentage = 50;
 
@@ -105,5 +105,9 @@ public class Accommodation {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public Integer getDownPaymentPercentage() {
+        return this.downPaymentPercentage != null ? this.downPaymentPercentage : 50;
     }
 }
