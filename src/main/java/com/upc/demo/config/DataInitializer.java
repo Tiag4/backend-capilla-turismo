@@ -22,6 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import com.upc.demo.entidad.Alert;
+import com.upc.demo.entidad.enums.AlertSeverity;
+import com.upc.demo.repositorio.AlertRepository;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -33,6 +37,7 @@ public class DataInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final AccommodationRepository accommodationRepository;
     private final AttractionRepository attractionRepository;
+    private final AlertRepository alertRepository;
 
     @Override
     @Transactional
@@ -40,6 +45,7 @@ public class DataInitializer implements CommandLineRunner {
         initAdmin();
         initHost();
         initAttractions();
+        initAlerts();
     }
 
     private void initAdmin() {
@@ -348,5 +354,21 @@ public class DataInitializer implements CommandLineRunner {
                     log.info("✔ Atractivo inicial registrado en base de datos: {}", a.getName());
                 }
             }
+    }
+
+    private void initAlerts() {
+        if (alertRepository.count() == 0) {
+            Alert fireRiskAlert = Alert.builder()
+                    .title("Alerta Meteorológica: Riesgo Extremo de Incendios Forestales")
+                    .message("Rige índice extremo por vientos intensos y baja humedad relativa. Prohibido hacer fuego en todo el ejido municipal y zonas agrestes de Capilla del Monte.")
+                    .severity(AlertSeverity.DANGER)
+                    .linkUrl("https://capilladelmonte.gov.ar/defensa-civil")
+                    .linkText("Protocolo de Prevención y Teléfonos de Emergencia")
+                    .isActive(true)
+                    .expiresAt(LocalDateTime.now().plusDays(3))
+                    .build();
+            alertRepository.save(fireRiskAlert);
+            log.info("✔ Alerta de seguridad inicial sembrada: {}", fireRiskAlert.getTitle());
         }
+    }
 }
