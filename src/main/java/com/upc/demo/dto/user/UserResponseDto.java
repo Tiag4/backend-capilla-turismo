@@ -19,6 +19,8 @@ public class UserResponseDto {
     private String lastName;
     private String phone;
     private Role role;
+    private Boolean isActive;
+    private Integer accommodationsCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -30,6 +32,8 @@ public class UserResponseDto {
                 .lastName(user.getLastName())
                 .phone(user.getPhone())
                 .role(user.getRole())
+                .isActive(user.getIsActive() != null ? user.getIsActive() : true)
+                .accommodationsCount(user.getAccommodations() != null ? user.getAccommodations().size() : 0)
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

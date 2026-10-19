@@ -113,6 +113,86 @@ public class DataInitializer implements CommandLineRunner {
             accommodationRepository.save(cabin);
             log.info("✔ Alojamiento de prueba asignado al cabañero: Cabañas Pircas del Uritorco");
         }
+
+        // Host 2: Marcela Rossi
+        String host2Email = "marcela.rossi@capillaturismo.com.ar";
+        if (userRepository.findByEmail(host2Email).isEmpty()) {
+            User host2 = User.builder()
+                    .email(host2Email)
+                    .password(passwordEncoder.encode("HostCapilla2026!"))
+                    .name("Marcela")
+                    .lastName("Rossi (Hostería Los Nogales)")
+                    .role(Role.HOST)
+                    .phone("+54 9 3548 512345")
+                    .isActive(true)
+                    .build();
+            host2 = userRepository.save(host2);
+
+            Accommodation hotel = Accommodation.builder()
+                    .name("Hostería Boutique Los Nogales")
+                    .description("Casona serrana con parque arbolado a 400 m de la Calle Techada con servicio de desayuno artesanal.")
+                    .type(AccommodationType.HOTEL)
+                    .address("Av. Pueyrredón 340")
+                    .locality("Capilla del Monte")
+                    .latitude(-30.8592)
+                    .longitude(-64.5283)
+                    .pricePerNight(BigDecimal.valueOf(120000.00))
+                    .maxGuests(4)
+                    .amenities(new ArrayList<>(Arrays.asList("Desayuno serrano", "Wi-Fi", "Calefacción central", "Jardín con frutales")))
+                    .isActive(true)
+                    .host(host2)
+                    .images(new ArrayList<>())
+                    .build();
+
+            hotel.getImages().add(AccommodationImage.builder()
+                    .url("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80")
+                    .isMain(true)
+                    .accommodation(hotel)
+                    .build());
+
+            accommodationRepository.save(hotel);
+            log.info("✔ Prestadora 2 registrada: Marcela Rossi - Hostería Boutique Los Nogales");
+        }
+
+        // Host 3: Carlos Benítez
+        String host3Email = "carlos.benitez@capillaturismo.com.ar";
+        if (userRepository.findByEmail(host3Email).isEmpty()) {
+            User host3 = User.builder()
+                    .email(host3Email)
+                    .password(passwordEncoder.encode("HostCapilla2026!"))
+                    .name("Carlos")
+                    .lastName("Benítez (Refugio Los Alazanes)")
+                    .role(Role.HOST)
+                    .phone("+54 9 3548 678901")
+                    .isActive(true)
+                    .build();
+            host3 = userRepository.save(host3);
+
+            Accommodation cabin2 = Accommodation.builder()
+                    .name("Refugio de Montaña Los Alazanes")
+                    .description("Monoambiente de montaña con deck privado con vista al atardecer sobre el Dique El Cajón.")
+                    .type(AccommodationType.APARTMENT)
+                    .address("Barrio La Banda, Calle Los Quebrachos 12")
+                    .locality("Capilla del Monte")
+                    .latitude(-30.8711)
+                    .longitude(-64.5389)
+                    .pricePerNight(BigDecimal.valueOf(65000.00))
+                    .maxGuests(2)
+                    .amenities(new ArrayList<>(Arrays.asList("Wi-Fi", "Deck privado", "Parrilla", "Cocina equipada", "Pet friendly")))
+                    .isActive(true)
+                    .host(host3)
+                    .images(new ArrayList<>())
+                    .build();
+
+            cabin2.getImages().add(AccommodationImage.builder()
+                    .url("https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1200&q=80")
+                    .isMain(true)
+                    .accommodation(cabin2)
+                    .build());
+
+            accommodationRepository.save(cabin2);
+            log.info("✔ Prestador 3 registrado: Carlos Benítez - Refugio de Montaña Los Alazanes");
+        }
     }
 
     private void initAttractions() {

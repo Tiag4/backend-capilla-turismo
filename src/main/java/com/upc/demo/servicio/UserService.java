@@ -48,4 +48,13 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + id));
         return UserResponseDto.fromEntity(user);
     }
+
+    @Transactional
+    public UserResponseDto updateUserStatus(UUID id, boolean isActive) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + id));
+        user.setIsActive(isActive);
+        User updated = userRepository.save(user);
+        return UserResponseDto.fromEntity(updated);
+    }
 }
