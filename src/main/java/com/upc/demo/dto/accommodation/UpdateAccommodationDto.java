@@ -42,6 +42,11 @@ public class UpdateAccommodationDto {
     @Min(value = 1, message = "La capacidad maxima debe ser al menos 1 huesped")
     private Integer maxGuests;
 
+    private Boolean hasBreakfast;
+
+    @Size(max = 150, message = "El tipo de desayuno no puede exceder 150 caracteres")
+    private String breakfastType;
+
     private List<String> amenities;
 
     @Min(value = 0, message = "El porcentaje de seña no puede ser negativo")

@@ -57,6 +57,13 @@ public class Accommodation {
     @Builder.Default
     private List<String> amenities = new ArrayList<>();
 
+    @Column(name = "has_breakfast", nullable = false)
+    @Builder.Default
+    private Boolean hasBreakfast = false;
+
+    @Column(name = "breakfast_type", length = 150)
+    private String breakfastType;
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;
