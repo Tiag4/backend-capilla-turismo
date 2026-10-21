@@ -2,15 +2,21 @@ package com.upc.demo.config;
 
 import com.upc.demo.entidad.Accommodation;
 import com.upc.demo.entidad.AccommodationImage;
-import com.upc.demo.entidad.User;
-import com.upc.demo.entidad.enums.AccommodationType;
-import com.upc.demo.entidad.enums.Role;
+import com.upc.demo.entidad.Alert;
 import com.upc.demo.entidad.Attraction;
 import com.upc.demo.entidad.AttractionImage;
+import com.upc.demo.entidad.Event;
+import com.upc.demo.entidad.User;
+import com.upc.demo.entidad.enums.AccommodationType;
+import com.upc.demo.entidad.enums.AlertSeverity;
 import com.upc.demo.entidad.enums.AttractionCategory;
 import com.upc.demo.entidad.enums.AttractionStatus;
-import com.upc.demo.repositorio.AttractionRepository;
+import com.upc.demo.entidad.enums.EventCategory;
+import com.upc.demo.entidad.enums.Role;
 import com.upc.demo.repositorio.AccommodationRepository;
+import com.upc.demo.repositorio.AlertRepository;
+import com.upc.demo.repositorio.AttractionRepository;
+import com.upc.demo.repositorio.EventRepository;
 import com.upc.demo.repositorio.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,12 +26,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import com.upc.demo.entidad.Alert;
-import com.upc.demo.entidad.enums.AlertSeverity;
-import com.upc.demo.repositorio.AlertRepository;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -38,6 +42,7 @@ public class DataInitializer implements CommandLineRunner {
     private final AccommodationRepository accommodationRepository;
     private final AttractionRepository attractionRepository;
     private final AlertRepository alertRepository;
+    private final EventRepository eventRepository;
 
     @Override
     @Transactional
@@ -46,6 +51,7 @@ public class DataInitializer implements CommandLineRunner {
         initHost();
         initAttractions();
         initAlerts();
+        initEvents();
     }
 
     private void initAdmin() {
@@ -219,156 +225,156 @@ public class DataInitializer implements CommandLineRunner {
     private void initAttractions() {
         List<Attraction> list = new ArrayList<>();
 
-            // 1. Cerro Uritorco
-            Attraction uritorco = Attraction.builder()
-                    .name("Cerro Uritorco")
-                    .description("El pico más emblemático del Valle de Punilla con 1.979 msnm. Sendero de alta exigencia física.")
-                    .category(AttractionCategory.HILL)
-                    .difficulty("ALTA")
-                    .estimatedDuration("7 horas ida y vuelta")
-                    .howToGet("A 3 km del centro por calle Sabattini hasta el Parador La Toma.")
-                    .requiresGuide(false)
-                    .admissionFee(BigDecimal.valueOf(15000))
-                    .latitude(-30.8522)
-                    .longitude(-64.4789)
-                    .status(AttractionStatus.OPEN)
-                    .statusNotice(null)
-                    .isFeatured(true)
-                    .images(new ArrayList<>())
-                    .build();
-            uritorco.getImages().add(AttractionImage.builder()
-                    .url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80")
-                    .publicId("uritorco_cover")
-                    .attraction(uritorco)
-                    .build());
-            list.add(uritorco);
+        // 1. Cerro Uritorco
+        Attraction uritorco = Attraction.builder()
+                .name("Cerro Uritorco")
+                .description("El pico más emblemático del Valle de Punilla con 1.979 msnm. Sendero de alta exigencia física.")
+                .category(AttractionCategory.HILL)
+                .difficulty("ALTA")
+                .estimatedDuration("7 horas ida y vuelta")
+                .howToGet("A 3 km del centro por calle Sabattini hasta el Parador La Toma.")
+                .requiresGuide(false)
+                .admissionFee(BigDecimal.valueOf(15000))
+                .latitude(-30.8522)
+                .longitude(-64.4789)
+                .status(AttractionStatus.OPEN)
+                .statusNotice(null)
+                .isFeatured(true)
+                .images(new ArrayList<>())
+                .build();
+        uritorco.getImages().add(AttractionImage.builder()
+                .url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80")
+                .publicId("uritorco_cover")
+                .attraction(uritorco)
+                .build());
+        list.add(uritorco);
 
-            // 2. Parque Los Terrones
-            Attraction terrones = Attraction.builder()
-                    .name("Parque Los Terrones")
-                    .description("Cañadones rojizos, laberintos geológicos esculpidos por viento y agua hace millones de años.")
-                    .category(AttractionCategory.NATURE_TRAIL)
-                    .difficulty("MEDIA")
-                    .estimatedDuration("2.5 a 3 horas")
-                    .howToGet("Ruta Nacional 38 Km 92, a 14 km al norte de Capilla del Monte.")
-                    .requiresGuide(true)
-                    .admissionFee(BigDecimal.valueOf(8000))
-                    .latitude(-30.7711)
-                    .longitude(-64.4822)
-                    .status(AttractionStatus.OPEN)
-                    .statusNotice(null)
-                    .isFeatured(true)
-                    .images(new ArrayList<>())
-                    .build();
-            terrones.getImages().add(AttractionImage.builder()
-                    .url("https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80")
-                    .publicId("terrones_cover")
-                    .attraction(terrones)
-                    .build());
-            list.add(terrones);
+        // 2. Parque Los Terrones
+        Attraction terrones = Attraction.builder()
+                .name("Parque Los Terrones")
+                .description("Cañadones rojizos, laberintos geológicos esculpidos por viento y agua hace millones de años.")
+                .category(AttractionCategory.NATURE_TRAIL)
+                .difficulty("MEDIA")
+                .estimatedDuration("2.5 a 3 horas")
+                .howToGet("Ruta Nacional 38 Km 92, a 14 km al norte de Capilla del Monte.")
+                .requiresGuide(true)
+                .admissionFee(BigDecimal.valueOf(8000))
+                .latitude(-30.7711)
+                .longitude(-64.4822)
+                .status(AttractionStatus.OPEN)
+                .statusNotice(null)
+                .isFeatured(true)
+                .images(new ArrayList<>())
+                .build();
+        terrones.getImages().add(AttractionImage.builder()
+                .url("https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80")
+                .publicId("terrones_cover")
+                .attraction(terrones)
+                .build());
+        list.add(terrones);
 
-            // 3. El Zapato
-            Attraction zapato = Attraction.builder()
-                    .name("El Zapato")
-                    .description("Geoforma natural modelada por la erosión eólica con vistas panorámicas privilegiadas al lago del dique.")
-                    .category(AttractionCategory.CULTURAL)
-                    .difficulty("BAJA")
-                    .estimatedDuration("1 hora")
-                    .howToGet("A 1.5 km de la Plaza San Martín, acceso pavimentado por calle Hipólito Yrigoyen.")
-                    .requiresGuide(false)
-                    .admissionFee(BigDecimal.ZERO)
-                    .latitude(-30.8625)
-                    .longitude(-64.5386)
-                    .status(AttractionStatus.OPEN)
-                    .statusNotice(null)
-                    .isFeatured(true)
-                    .images(new ArrayList<>())
-                    .build();
-            zapato.getImages().add(AttractionImage.builder()
-                    .url("https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80")
-                    .publicId("zapato_cover")
-                    .attraction(zapato)
-                    .build());
-            list.add(zapato);
+        // 3. El Zapato
+        Attraction zapato = Attraction.builder()
+                .name("El Zapato")
+                .description("Geoforma natural modelada por la erosión eólica con vistas panorámicas privilegiadas al lago del dique.")
+                .category(AttractionCategory.CULTURAL)
+                .difficulty("BAJA")
+                .estimatedDuration("1 hora")
+                .howToGet("A 1.5 km de la Plaza San Martín, acceso pavimentado por calle Hipólito Yrigoyen.")
+                .requiresGuide(false)
+                .admissionFee(BigDecimal.ZERO)
+                .latitude(-30.8625)
+                .longitude(-64.5386)
+                .status(AttractionStatus.OPEN)
+                .statusNotice(null)
+                .isFeatured(true)
+                .images(new ArrayList<>())
+                .build();
+        zapato.getImages().add(AttractionImage.builder()
+                .url("https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80")
+                .publicId("zapato_cover")
+                .attraction(zapato)
+                .build());
+        list.add(zapato);
 
-            // 4. Dique El Cajón
-            Attraction cajon = Attraction.builder()
-                    .name("Dique El Cajón")
-                    .description("Espejo de agua ideal para pesca deportiva sin motor, avistaje de aves y paseos en kayak.")
-                    .category(AttractionCategory.RIVER_BEACH)
-                    .difficulty("BAJA")
-                    .estimatedDuration("Paseo libre")
-                    .howToGet("A 3.5 km del centro, siguiendo por Av. El Cajón.")
-                    .requiresGuide(false)
-                    .admissionFee(BigDecimal.ZERO)
-                    .latitude(-30.8719)
-                    .longitude(-64.5492)
-                    .status(AttractionStatus.OPEN)
-                    .statusNotice(null)
-                    .isFeatured(false)
-                    .images(new ArrayList<>())
-                    .build();
-            cajon.getImages().add(AttractionImage.builder()
-                    .url("https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=80")
-                    .publicId("cajon_cover")
-                    .attraction(cajon)
-                    .build());
-            list.add(cajon);
+        // 4. Dique El Cajón
+        Attraction cajon = Attraction.builder()
+                .name("Dique El Cajón")
+                .description("Espejo de agua ideal para pesca deportiva sin motor, avistaje de aves y paseos en kayak.")
+                .category(AttractionCategory.RIVER_BEACH)
+                .difficulty("BAJA")
+                .estimatedDuration("Paseo libre")
+                .howToGet("A 3.5 km del centro, siguiendo por Av. El Cajón.")
+                .requiresGuide(false)
+                .admissionFee(BigDecimal.ZERO)
+                .latitude(-30.8719)
+                .longitude(-64.5492)
+                .status(AttractionStatus.OPEN)
+                .statusNotice(null)
+                .isFeatured(false)
+                .images(new ArrayList<>())
+                .build();
+        cajon.getImages().add(AttractionImage.builder()
+                .url("https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=80")
+                .publicId("cajon_cover")
+                .attraction(cajon)
+                .build());
+        list.add(cajon);
 
-            // 5. Balneario La Toma
-            Attraction laToma = Attraction.builder()
-                    .name("Balneario La Toma")
-                    .description("Ollas naturales, cascadas de agua de vertiente y frondosa arboleda autóctona sobre el Río Calabalumba.")
-                    .category(AttractionCategory.RIVER_BEACH)
-                    .difficulty("BAJA")
-                    .estimatedDuration("Medio día")
-                    .howToGet("Al final de la calle Sabattini, en la base oeste del Cerro Uritorco.")
-                    .requiresGuide(false)
-                    .admissionFee(BigDecimal.valueOf(2500))
-                    .latitude(-30.8548)
-                    .longitude(-64.5021)
-                    .status(AttractionStatus.WEATHER_RESTRICTED)
-                    .statusNotice("Precaución por caudal crecido en temporada de lluvias.")
-                    .isFeatured(false)
-                    .images(new ArrayList<>())
-                    .build();
-            laToma.getImages().add(AttractionImage.builder()
-                    .url("https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?auto=format&fit=crop&w=1200&q=80")
-                    .publicId("latoma_cover")
-                    .attraction(laToma)
-                    .build());
-            list.add(laToma);
+        // 5. Balneario La Toma
+        Attraction laToma = Attraction.builder()
+                .name("Balneario La Toma")
+                .description("Ollas naturales, cascadas de agua de vertiente y frondosa arboleda autóctona sobre el Río Calabalumba.")
+                .category(AttractionCategory.RIVER_BEACH)
+                .difficulty("BAJA")
+                .estimatedDuration("Medio día")
+                .howToGet("Al final de la calle Sabattini, en la base oeste del Cerro Uritorco.")
+                .requiresGuide(false)
+                .admissionFee(BigDecimal.valueOf(2500))
+                .latitude(-30.8548)
+                .longitude(-64.5021)
+                .status(AttractionStatus.WEATHER_RESTRICTED)
+                .statusNotice("Precaución por caudal crecido en temporada de lluvias.")
+                .isFeatured(false)
+                .images(new ArrayList<>())
+                .build();
+        laToma.getImages().add(AttractionImage.builder()
+                .url("https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?auto=format&fit=crop&w=1200&q=80")
+                .publicId("latoma_cover")
+                .attraction(laToma)
+                .build());
+        list.add(laToma);
 
-            // 6. Los Mogotes
-            Attraction mogotes = Attraction.builder()
-                    .name("Los Mogotes y Paso del Indio")
-                    .description("Garganta natural de paredes rocosas de granito con senderos y zona de escalada deportiva.")
-                    .category(AttractionCategory.NATURE_TRAIL)
-                    .difficulty("MEDIA")
-                    .estimatedDuration("2 horas")
-                    .howToGet("A 4 km al noroeste del centro sobre el Río Dolores.")
-                    .requiresGuide(false)
-                    .admissionFee(BigDecimal.valueOf(3000))
-                    .latitude(-30.8405)
-                    .longitude(-64.5498)
-                    .status(AttractionStatus.OPEN)
-                    .statusNotice(null)
-                    .isFeatured(false)
-                    .images(new ArrayList<>())
-                    .build();
-            mogotes.getImages().add(AttractionImage.builder()
-                    .url("https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80")
-                    .publicId("mogotes_cover")
-                    .attraction(mogotes)
-                    .build());
-            list.add(mogotes);
+        // 6. Los Mogotes
+        Attraction mogotes = Attraction.builder()
+                .name("Los Mogotes y Paso del Indio")
+                .description("Garganta natural de paredes rocosas de granito con senderos y zona de escalada deportiva.")
+                .category(AttractionCategory.NATURE_TRAIL)
+                .difficulty("MEDIA")
+                .estimatedDuration("2 horas")
+                .howToGet("A 4 km al noroeste del centro sobre el Río Dolores.")
+                .requiresGuide(false)
+                .admissionFee(BigDecimal.valueOf(3000))
+                .latitude(-30.8405)
+                .longitude(-64.5498)
+                .status(AttractionStatus.OPEN)
+                .statusNotice(null)
+                .isFeatured(false)
+                .images(new ArrayList<>())
+                .build();
+        mogotes.getImages().add(AttractionImage.builder()
+                .url("https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80")
+                .publicId("mogotes_cover")
+                .attraction(mogotes)
+                .build());
+        list.add(mogotes);
 
-            for (Attraction a : list) {
-                if (!attractionRepository.existsByName(a.getName())) {
-                    attractionRepository.save(a);
-                    log.info("✔ Atractivo inicial registrado en base de datos: {}", a.getName());
-                }
+        for (Attraction a : list) {
+            if (!attractionRepository.existsByName(a.getName())) {
+                attractionRepository.save(a);
+                log.info("✔ Atractivo inicial registrado en base de datos: {}", a.getName());
             }
+        }
     }
 
     private void initAlerts() {
@@ -384,6 +390,55 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
             alertRepository.save(fireRiskAlert);
             log.info("✔ Alerta de seguridad inicial sembrada: {}", fireRiskAlert.getTitle());
+        }
+    }
+
+    private void initEvents() {
+        if (eventRepository.count() == 0) {
+            List<Event> events = List.of(
+                Event.builder()
+                    .title("Festival del Alienígena 2026")
+                    .description("La fiesta temática de ovnilogía y cultura pop más convocante del Valle de Punilla, con desfile de disfraces, música en vivo y conferencias.")
+                    .category(EventCategory.FESTIVAL)
+                    .startDate(LocalDate.now().plusDays(5))
+                    .endDate(LocalDate.now().plusDays(7))
+                    .timeString("19:00 a 02:00 hs")
+                    .location("Predio Gabriel Suárez y Calle Techada")
+                    .isFree(true)
+                    .imageUrl("https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80")
+                    .isActive(true)
+                    .isFeatured(true)
+                    .build(),
+                Event.builder()
+                    .title("Noche de Astroturismo y Leyendas Serranas")
+                    .description("Observación guiada con telescopios de cielo profundo, astrofotografía y relatos ancestrales de la cultura comechingón.")
+                    .category(EventCategory.COMMUNITY)
+                    .startDate(LocalDate.now().plusDays(10))
+                    .timeString("20:30 hs")
+                    .location("Base del Cerro Uritorco")
+                    .isFree(false)
+                    .price(BigDecimal.valueOf(15000))
+                    .imageUrl("https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1200&q=80")
+                    .isActive(true)
+                    .isFeatured(false)
+                    .build(),
+                Event.builder()
+                    .title("Feria de Sabores y Artesanías del Uritorco")
+                    .description("Paseo gastronómico con dulces regionales, miel serrana, cervecerías artesanales y feria de artesanos locales.")
+                    .category(EventCategory.FAIR)
+                    .startDate(LocalDate.now().plusDays(2))
+                    .endDate(LocalDate.now().plusDays(4))
+                    .timeString("11:00 a 21:00 hs")
+                    .location("Plaza San Martín")
+                    .isFree(true)
+                    .imageUrl("https://images.unsplash.com/photo-1533900298318-6b8da08a523e?auto=format&fit=crop&w=1200&q=80")
+                    .isActive(true)
+                    .isFeatured(false)
+                    .build()
+            );
+
+            eventRepository.saveAll(events);
+            log.info("✔ Eventos culturales iniciales sembrados con éxito (3 eventos)");
         }
     }
 }
