@@ -5,10 +5,13 @@ import com.upc.demo.config.exception.BadRequestException;
 import com.upc.demo.config.exception.ConflictException;
 import com.upc.demo.config.exception.ResourceNotFoundException;
 import com.upc.demo.dto.auth.AuthResponseDto;
+import com.upc.demo.dto.auth.ChangePasswordDto;
 import com.upc.demo.dto.auth.LoginRequestDto;
 import com.upc.demo.dto.auth.RegisterHostDto;
 import com.upc.demo.dto.auth.RegisterTouristDto;
+import com.upc.demo.dto.auth.UpdateProfileDto;
 import com.upc.demo.dto.auth.UserProfileDto;
+import com.upc.demo.dto.common.MessageResponseDto;
 import com.upc.demo.entidad.InvitationToken;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.Role;
@@ -129,5 +132,39 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + userId));
         return UserProfileDto.fromEntity(user);
+    }
+
+    @Transactional
+    public UserProfileDto updateProfile(UUID userId, UpdateProfileDto dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + userId));
+
+        user.setName(dto.getName().trim());
+        user.setLastName(dto.getLastName().trim());
+        user.setPhone(dto.getPhone() != null && !dto.getPhone().isBlank() ? dto.getPhone().trim() : null);
+
+        User savedUser = userRepository.save(user);
+        return UserProfileDto.fromEntity(savedUser);
+    }
+
+    @Transactional
+    public MessageResponseDto changePassword(UUID userId, ChangePasswordDto dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + userId));
+
+        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
+            throw new BadRequestException("La contraseña actual es incorrecta");
+        }
+
+        if (passwordEncoder.matches(dto.getNewPassword(), user.getPassword())) {
+            throw new BadRequestException("La nueva contraseña no puede ser idéntica a la actual");
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userRepository.save(user);
+
+        return MessageResponseDto.builder()
+                .message("Contraseña actualizada exitosamente")
+                .build();
     }
 }
