@@ -31,6 +31,8 @@ public class AccommodationResponseDto {
     private Double longitude;
     private BigDecimal pricePerNight;
     private Integer maxGuests;
+    private Boolean hasBreakfast;
+    private String breakfastType;
     private List<String> amenities;
     private Boolean isActive;
     private Integer downPaymentPercentage;
@@ -78,6 +80,8 @@ public class AccommodationResponseDto {
                 .longitude(entity.getLongitude())
                 .pricePerNight(entity.getPricePerNight())
                 .maxGuests(entity.getMaxGuests())
+                .hasBreakfast(entity.getHasBreakfast() != null ? entity.getHasBreakfast() : false)
+                .breakfastType(entity.getBreakfastType())
                 .amenities(entity.getAmenities() != null ? new ArrayList<>(entity.getAmenities()) : new ArrayList<>())
                 .isActive(entity.getIsActive())
                 .downPaymentPercentage(entity.getDownPaymentPercentage() != null ? entity.getDownPaymentPercentage() : 50)

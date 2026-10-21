@@ -47,6 +47,12 @@ public class CreateAccommodationDto {
     private Integer maxGuests;
 
     @Builder.Default
+    private Boolean hasBreakfast = false;
+
+    @Size(max = 150, message = "El tipo de desayuno no puede exceder 150 caracteres")
+    private String breakfastType;
+
+    @Builder.Default
     private List<String> amenities = new ArrayList<>();
 
     @Min(value = 0, message = "El porcentaje de seña no puede ser negativo")

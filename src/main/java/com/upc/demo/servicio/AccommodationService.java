@@ -130,6 +130,8 @@ public class AccommodationService {
                 .longitude(dto.getLongitude())
                 .pricePerNight(dto.getPricePerNight())
                 .maxGuests(dto.getMaxGuests())
+                .hasBreakfast(dto.getHasBreakfast() != null ? dto.getHasBreakfast() : false)
+                .breakfastType(dto.getBreakfastType() != null ? dto.getBreakfastType().trim() : null)
                 .amenities(dto.getAmenities() != null ? new ArrayList<>(dto.getAmenities()) : new ArrayList<>())
                 .downPaymentPercentage(dto.getDownPaymentPercentage() != null ? dto.getDownPaymentPercentage() : 50)
                 .bankAccountHolder(dto.getBankAccountHolder() != null ? dto.getBankAccountHolder().trim() : null)
@@ -188,6 +190,12 @@ public class AccommodationService {
         }
         if (dto.getMaxGuests() != null) {
             accommodation.setMaxGuests(dto.getMaxGuests());
+        }
+        if (dto.getHasBreakfast() != null) {
+            accommodation.setHasBreakfast(dto.getHasBreakfast());
+        }
+        if (dto.getBreakfastType() != null) {
+            accommodation.setBreakfastType(dto.getBreakfastType().trim());
         }
         if (dto.getAmenities() != null) {
             accommodation.setAmenities(new ArrayList<>(dto.getAmenities()));
