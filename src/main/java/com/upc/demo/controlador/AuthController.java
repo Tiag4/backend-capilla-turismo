@@ -3,10 +3,13 @@ package com.upc.demo.controlador;
 import com.upc.demo.config.UserPrincipal;
 import com.upc.demo.config.exception.UnauthorizedException;
 import com.upc.demo.dto.auth.AuthResponseDto;
+import com.upc.demo.dto.auth.ChangePasswordDto;
 import com.upc.demo.dto.auth.LoginRequestDto;
 import com.upc.demo.dto.auth.RegisterHostDto;
 import com.upc.demo.dto.auth.RegisterTouristDto;
+import com.upc.demo.dto.auth.UpdateProfileDto;
 import com.upc.demo.dto.auth.UserProfileDto;
+import com.upc.demo.dto.common.MessageResponseDto;
 import com.upc.demo.servicio.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,5 +46,25 @@ public class AuthController {
             throw new UnauthorizedException("Debes estar autenticado para consultar tu perfil");
         }
         return ResponseEntity.ok(authService.getProfile(principal.getId()));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<UserProfileDto> updateProfile(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody UpdateProfileDto dto) {
+        if (principal == null) {
+            throw new UnauthorizedException("Debes estar autenticado para actualizar tu perfil");
+        }
+        return ResponseEntity.ok(authService.updateProfile(principal.getId(), dto));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<MessageResponseDto> changePassword(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ChangePasswordDto dto) {
+        if (principal == null) {
+            throw new UnauthorizedException("Debes estar autenticado para cambiar tu contraseña");
+        }
+        return ResponseEntity.ok(authService.changePassword(principal.getId(), dto));
     }
 }
