@@ -126,6 +126,19 @@ Al levantar el servidor backend (`./mvnw spring-boot:run`), los enlaces interact
 
 ---
 
+## Credenciales de Acceso Oficial y Seeding (`DataInitializer`)
+
+Al iniciar la aplicación (`./mvnw spring-boot:run`), el componente `DataInitializer` verifica y puebla automáticamente en la base de datos PostgreSQL los usuarios base con contraseñas cifradas en BCrypt:
+
+| Rol | Correo Electrónico | Contraseña | Perfil Inicial | Propósito / Permisos |
+| :--- | :--- | :--- | :--- | :--- |
+| **`ADMIN`** | `admin@capilladelmonte.gov.ar` | `AdminCapilla2026!` | Comisión Oficial Turismo Capilla | Acceso total: gestión de prestadores, tokens de invitación, agenda cultural, auditoría y temporadas. |
+| **`HOST`** | `host@capilladelmonte.gov.ar` | `HostCapilla2026!` | Roberto Gómez (*Cabañas Pircas del Uritorco*) | Prestador adherido: administración de su complejo asignado, fotos, tarifas y confirmación de reservas. |
+
+> **Nota para Swagger UI y Postman:** Para autenticarse contra la API, enviar una petición `POST /api/v1/auth/login` con cualquiera de estas credenciales para obtener el token Bearer JWT.
+
+---
+
 ## 📚 Documentación y Recursos
 
 - **Wiki del repositorio:** Detalla los aspectos del marco PMI, arquitectura de backend, actas y planificación técnica.
