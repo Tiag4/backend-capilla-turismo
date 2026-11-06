@@ -38,6 +38,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final AccommodationRepository accommodationRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     @Transactional
     public BookingResponseDto createBooking(CreateBookingDto dto, UserPrincipal currentUser) {
@@ -113,6 +114,7 @@ public class BookingService {
                 .build();
 
         Booking savedBooking = bookingRepository.save(booking);
+        emailService.sendVoucherEmails(savedBooking);
         return mapToResponseDto(savedBooking);
     }
 
@@ -140,7 +142,37 @@ public class BookingService {
 
         booking.setStatus(newStatus);
         Booking updatedBooking = bookingRepository.save(booking);
+        if (newStatus == BookingStatus.CONFIRMED) {
+            emailService.sendVoucherEmails(updatedBooking);
+        }
         return mapToResponseDto(updatedBooking);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean resendVoucherToGuest(UUID id, UUID userId, boolean isAdmin) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + id));
+
+        boolean isHostOwner = booking.getAccommodation().getHost().getId().equals(userId);
+        if (!isAdmin && !isHostOwner) {
+            throw new ForbiddenException("No tienes permisos para reenviar el voucher de esta reserva");
+        }
+
+        return emailService.sendVoucherToGuest(booking);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean resendVoucherToGuest(String code, String email) {
+        if (code == null || code.isBlank() || email == null || email.isBlank()) {
+            throw new BadRequestException("El codigo de reserva y el email son obligatorios");
+        }
+
+        Booking booking = bookingRepository
+                .findByBookingCodeAndGuestEmailIgnoreCase(code.trim(), email.trim().toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No se encontro ninguna reserva con el codigo y correo especificados"));
+
+        return emailService.sendVoucherToGuest(booking);
     }
 
     @Transactional(readOnly = true)
