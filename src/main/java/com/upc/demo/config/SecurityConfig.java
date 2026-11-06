@@ -95,6 +95,7 @@ public class SecurityConfig {
                         
                         // Reservas: creacion y consulta publica (lookup)
                         .requestMatchers(HttpMethod.POST, "/api/v1/bookings").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/bookings/resend-voucher").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookings/lookup").permitAll()
 
                         // Resenas: envio publico verificado por codigo y consulta de resenas aprobadas

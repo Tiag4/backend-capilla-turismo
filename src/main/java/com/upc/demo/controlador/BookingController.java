@@ -4,7 +4,9 @@ import com.upc.demo.config.UserPrincipal;
 import com.upc.demo.dto.booking.BookingLookupResponseDto;
 import com.upc.demo.dto.booking.BookingResponseDto;
 import com.upc.demo.dto.booking.CreateBookingDto;
+import com.upc.demo.dto.booking.ResendVoucherDto;
 import com.upc.demo.dto.booking.UpdateBookingStatusDto;
+import com.upc.demo.dto.common.MessageResponseDto;
 import com.upc.demo.entidad.enums.BookingStatus;
 import com.upc.demo.entidad.enums.Role;
 import com.upc.demo.servicio.BookingService;
@@ -68,6 +70,23 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.lookup(code, email));
     }
 
+    @PostMapping("/resend-voucher")
+    public ResponseEntity<MessageResponseDto> resendVoucher(
+            @Valid @RequestBody ResendVoucherDto dto) {
+        boolean sent = bookingService.resendVoucherToGuest(dto.getCode(), dto.getEmail());
+        return buildResendResponse(sent);
+    }
+
+    @PostMapping("/{id}/resend-voucher")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<MessageResponseDto> resendVoucherById(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+        boolean sent = bookingService.resendVoucherToGuest(id, currentUser.getId(), isAdmin);
+        return buildResendResponse(sent);
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BookingResponseDto> getBookingById(
@@ -75,5 +94,17 @@ public class BookingController {
             @AuthenticationPrincipal UserPrincipal currentUser) {
         boolean isAdmin = currentUser.getRole() == Role.ADMIN;
         return ResponseEntity.ok(bookingService.getById(id, currentUser.getId(), isAdmin));
+    }
+
+    private ResponseEntity<MessageResponseDto> buildResendResponse(boolean sent) {
+        if (sent) {
+            return ResponseEntity.ok(MessageResponseDto.builder()
+                    .message("Voucher reenviado por email correctamente")
+                    .build());
+        }
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(MessageResponseDto.builder()
+                        .message("El servicio de correo no esta configurado. Contacta a la Cámara de Turismo.")
+                        .build());
     }
 }
