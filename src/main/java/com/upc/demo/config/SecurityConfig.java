@@ -96,6 +96,10 @@ public class SecurityConfig {
                         // Reservas: creacion y consulta publica (lookup)
                         .requestMatchers(HttpMethod.POST, "/api/v1/bookings").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/bookings/lookup").permitAll()
+
+                        // Resenas: envio publico verificado por codigo y consulta de resenas aprobadas
+                        .requestMatchers(HttpMethod.POST, "/api/v1/reviews").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/eligibility", "/api/v1/reviews/accommodation/**").permitAll()
                         
                         // Documentacion OpenAPI / Swagger
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
