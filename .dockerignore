@@ -1,0 +1,13 @@
+.git
+.gitignore
+.github
+.idea
+.vscode
+.agents
+target
+uploads
+*.log
+*.md
+.env
+.env.*
+!.env.example
