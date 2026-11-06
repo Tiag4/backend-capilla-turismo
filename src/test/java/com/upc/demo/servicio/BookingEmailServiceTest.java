@@ -8,6 +8,7 @@ import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.BookingStatus;
 import com.upc.demo.repositorio.AccommodationRepository;
 import com.upc.demo.repositorio.BookingRepository;
+import com.upc.demo.repositorio.DateBlockRepository;
 import com.upc.demo.repositorio.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,9 @@ class BookingEmailServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private DateBlockRepository dateBlockRepository;
 
     @Mock
     private EmailService emailService;
@@ -84,6 +88,42 @@ class BookingEmailServiceTest {
         bookingService.createBooking(dto, null);
 
         verify(emailService).sendVoucherEmails(any(Booking.class));
+    }
+
+    @Test
+    @DisplayName("createBooking debe rechazar fechas bloqueadas por mantenimiento")
+    void createBooking_blockedDates_throwsConflict() {
+        UUID accommodationId = UUID.randomUUID();
+        User host = User.builder().id(UUID.randomUUID()).email("host@capilla.com").build();
+        Accommodation accommodation = Accommodation.builder()
+                .id(accommodationId)
+                .host(host)
+                .name("Cabaña Serrana")
+                .pricePerNight(BigDecimal.valueOf(80000))
+                .maxGuests(4)
+                .isActive(true)
+                .downPaymentPercentage(50)
+                .build();
+
+        CreateBookingDto dto = CreateBookingDto.builder()
+                .accommodationId(accommodationId)
+                .checkIn(LocalDate.now().plusDays(2))
+                .checkOut(LocalDate.now().plusDays(5))
+                .guestCount(2)
+                .guestName("Martina Gómez")
+                .guestEmail("turista@email.com")
+                .guestPhone("+54 9 351 555-1234")
+                .build();
+
+        when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+        when(bookingRepository.existsOverlappingBooking(any(), any(), any())).thenReturn(false);
+        when(dateBlockRepository.existsOverlappingBlock(any(), any(), any())).thenReturn(true);
+
+        assertThatThrownBy(() -> bookingService.createBooking(dto, null))
+                .isInstanceOf(com.upc.demo.config.exception.ConflictException.class)
+                .hasMessageContaining("fechas bloqueadas");
+
+        verify(emailService, org.mockito.Mockito.never()).sendVoucherEmails(any(Booking.class));
     }
 
     @Test

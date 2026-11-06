@@ -17,6 +17,7 @@ import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.BookingStatus;
 import com.upc.demo.repositorio.AccommodationRepository;
 import com.upc.demo.repositorio.BookingRepository;
+import com.upc.demo.repositorio.DateBlockRepository;
 import com.upc.demo.repositorio.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final AccommodationRepository accommodationRepository;
     private final UserRepository userRepository;
+    private final DateBlockRepository dateBlockRepository;
     private final EmailService emailService;
 
     @Transactional
@@ -73,6 +75,15 @@ public class BookingService {
         );
         if (solapada) {
             throw new ConflictException("El alojamiento ya posee una reserva en esas fechas");
+        }
+
+        boolean bloqueada = dateBlockRepository.existsOverlappingBlock(
+                dto.getAccommodationId(),
+                dto.getCheckIn(),
+                dto.getCheckOut()
+        );
+        if (bloqueada) {
+            throw new ConflictException("El alojamiento tiene fechas bloqueadas por mantenimiento o uso propio en ese rango");
         }
 
         // 5. Generación de Código Idempotente: CAP-<AÑO>-<4_DIGITOS_ALEATORIOS>
