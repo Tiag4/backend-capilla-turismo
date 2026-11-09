@@ -1,5 +1,6 @@
 package com.upc.demo.dto.booking;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
@@ -12,6 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -48,4 +50,11 @@ public class CreateBookingDto {
     private String guestOrigin;
 
     private String notes;
+
+    /**
+     * Detalle multi-unidad de la reserva (tipos de habitación y tarifas).
+     * Si la lista es nula o vacía se utiliza el flujo legacy de unidad única.
+     */
+    @Valid
+    private List<CreateBookingItemDto> items;
 }

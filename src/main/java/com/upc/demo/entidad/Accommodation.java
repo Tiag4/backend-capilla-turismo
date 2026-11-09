@@ -97,6 +97,11 @@ public class Accommodation {
     @Builder.Default
     private List<Booking> bookings = new ArrayList<>();
 
+    @OneToMany(mappedBy = "accommodation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @Builder.Default
+    private List<RoomType> roomTypes = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -7,27 +7,39 @@ import com.upc.demo.config.exception.ForbiddenException;
 import com.upc.demo.config.exception.ResourceNotFoundException;
 import com.upc.demo.dto.accommodation.AccommodationImageDto;
 import com.upc.demo.dto.accommodation.AccommodationSummaryDto;
+import com.upc.demo.dto.booking.BookingItemResponseDto;
 import com.upc.demo.dto.booking.BookingLookupResponseDto;
 import com.upc.demo.dto.booking.BookingResponseDto;
 import com.upc.demo.dto.booking.CreateBookingDto;
+import com.upc.demo.dto.booking.CreateBookingItemDto;
 import com.upc.demo.entidad.Accommodation;
 import com.upc.demo.entidad.AccommodationImage;
 import com.upc.demo.entidad.Booking;
+import com.upc.demo.entidad.BookingItem;
+import com.upc.demo.entidad.RatePlan;
+import com.upc.demo.entidad.RoomType;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.BookingStatus;
 import com.upc.demo.repositorio.AccommodationRepository;
+import com.upc.demo.repositorio.BookingItemRepository;
 import com.upc.demo.repositorio.BookingRepository;
 import com.upc.demo.repositorio.DateBlockRepository;
+import com.upc.demo.repositorio.RatePlanRepository;
+import com.upc.demo.repositorio.RoomTypeRepository;
 import com.upc.demo.repositorio.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -41,6 +53,9 @@ public class BookingService {
     private final UserRepository userRepository;
     private final DateBlockRepository dateBlockRepository;
     private final EmailService emailService;
+    private final RoomTypeRepository roomTypeRepository;
+    private final RatePlanRepository ratePlanRepository;
+    private final BookingItemRepository bookingItemRepository;
 
     @Transactional
     public BookingResponseDto createBooking(CreateBookingDto dto, UserPrincipal currentUser) {
@@ -62,12 +77,25 @@ public class BookingService {
             throw new BadRequestException("El alojamiento no se encuentra disponible para reservas");
         }
 
-        // 3. Validar capacidad
+        // 3. Rama multi-unidad: si la reserva incluye ítems se usa el motor de allotment por tipo de habitación
+        if (dto.getItems() != null && !dto.getItems().isEmpty()) {
+            return createMultiUnitBooking(dto, accommodation, (int) totalNights, currentUser);
+        }
+
+        // 4. Los alojamientos con inventario multi-unidad exigen indicar el tipo de habitación.
+        // De lo contrario, una reserva legacy ocuparía el alojamiento completo sin descontar cupo,
+        // lo que habilitaría sobreventa al combinarse con el motor de allotment.
+        if (roomTypeRepository.countByAccommodationId(accommodation.getId()) > 0) {
+            throw new BadRequestException(
+                    "Este alojamiento opera con tipos de habitación: debe seleccionar al menos uno para reservar");
+        }
+
+        // 5. Validar capacidad (flujo legacy de unidad única)
         if (dto.getGuestCount() > accommodation.getMaxGuests()) {
             throw new BadRequestException("La cantidad de huéspedes supera la capacidad máxima permitida (" + accommodation.getMaxGuests() + ")");
         }
 
-        // 4. Fórmula Anti-Solapamiento
+        // 6. Fórmula Anti-Solapamiento
         boolean solapada = bookingRepository.existsOverlappingBooking(
                 dto.getAccommodationId(),
                 dto.getCheckIn(),
@@ -86,23 +114,23 @@ public class BookingService {
             throw new ConflictException("El alojamiento tiene fechas bloqueadas por mantenimiento o uso propio en ese rango");
         }
 
-        // 5. Generación de Código Idempotente: CAP-<AÑO>-<4_DIGITOS_ALEATORIOS>
+        // 7. Generación de Código Idempotente: CAP-<AÑO>-<4_DIGITOS_ALEATORIOS>
         String bookingCode = generateUniqueBookingCode();
 
-        // 6. Cálculo de importe y seña
+        // 8. Cálculo de importe y seña
         BigDecimal totalAmount = accommodation.getPricePerNight().multiply(BigDecimal.valueOf(totalNights));
         int downPaymentPct = accommodation.getDownPaymentPercentage() != null ? accommodation.getDownPaymentPercentage() : 50;
         BigDecimal downPaymentAmount = totalAmount.multiply(BigDecimal.valueOf(downPaymentPct))
                 .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
         BigDecimal remainingBalance = totalAmount.subtract(downPaymentAmount);
 
-        // 7. Asociar turista si está autenticado
+        // 9. Asociar turista si está autenticado
         User tourist = null;
         if (currentUser != null && currentUser.getId() != null) {
             tourist = userRepository.findById(currentUser.getId()).orElse(null);
         }
 
-        // 8. Crear y persistir la reserva
+        // 10. Crear y persistir la reserva
         Booking booking = Booking.builder()
                 .bookingCode(bookingCode)
                 .accommodation(accommodation)
@@ -125,6 +153,155 @@ public class BookingService {
                 .build();
 
         Booking savedBooking = bookingRepository.save(booking);
+        emailService.sendVoucherEmails(savedBooking);
+        return mapToResponseDto(savedBooking);
+    }
+
+    private BookingResponseDto createMultiUnitBooking(CreateBookingDto dto, Accommodation accommodation,
+                                                      int totalNights, UserPrincipal currentUser) {
+        // Un bloqueo de fechas afecta al alojamiento completo, igual que en el flujo legacy
+        boolean bloqueada = dateBlockRepository.existsOverlappingBlock(
+                accommodation.getId(),
+                dto.getCheckIn(),
+                dto.getCheckOut()
+        );
+        if (bloqueada) {
+            throw new ConflictException("El alojamiento tiene fechas bloqueadas por mantenimiento o uso propio en ese rango");
+        }
+
+        List<CreateBookingItemDto> requestedItems = new ArrayList<>(dto.getItems());
+        for (CreateBookingItemDto item : requestedItems) {
+            if (item == null || item.getRoomTypeId() == null) {
+                throw new BadRequestException("Cada ítem de la reserva debe indicar un tipo de habitación");
+            }
+            if (item.getQuantity() == null || item.getQuantity() < 1) {
+                throw new BadRequestException("La cantidad de unidades de cada ítem debe ser al menos 1");
+            }
+            if (item.getGuests() == null || item.getGuests() < 1) {
+                throw new BadRequestException("La cantidad de huéspedes de cada ítem debe ser al menos 1");
+            }
+        }
+
+        // Bloquear siempre en el mismo orden para evitar deadlocks entre reservas concurrentes
+        requestedItems.sort(Comparator.comparing(CreateBookingItemDto::getRoomTypeId));
+
+        Map<UUID, Integer> requestedUnitsByRoomType = new HashMap<>();
+        List<BookingItem> bookingItems = new ArrayList<>();
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        int totalGuests = 0;
+        int totalRequestedUnits = 0;
+
+        for (CreateBookingItemDto item : requestedItems) {
+            RoomType roomType = roomTypeRepository.findByIdForUpdate(item.getRoomTypeId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Tipo de habitación no encontrado con id: " + item.getRoomTypeId()));
+
+            if (roomType.getAccommodation() == null
+                    || !roomType.getAccommodation().getId().equals(accommodation.getId())) {
+                throw new BadRequestException("El tipo de habitación no pertenece al alojamiento solicitado");
+            }
+            if (Boolean.FALSE.equals(roomType.getIsActive())) {
+                throw new BadRequestException("El tipo de habitación '" + roomType.getName() + "' no se encuentra disponible");
+            }
+
+            long alreadyBooked = bookingItemRepository.sumBookedUnits(
+                    roomType.getId(), dto.getCheckIn(), dto.getCheckOut());
+            int alreadyRequested = requestedUnitsByRoomType.getOrDefault(roomType.getId(), 0);
+            int totalUnits = roomType.getTotalUnits() != null ? roomType.getTotalUnits() : 0;
+            int availableUnits = Math.max(0, totalUnits - (int) alreadyBooked - alreadyRequested);
+
+            if (item.getQuantity() > availableUnits) {
+                throw new ConflictException("No hay disponibilidad suficiente para el tipo de habitación '"
+                        + roomType.getName() + "'");
+            }
+
+            int maxGuestsForItem = roomType.getMaxCapacity() * item.getQuantity();
+            if (item.getGuests() > maxGuestsForItem) {
+                throw new BadRequestException("La cantidad de huéspedes del tipo de habitación '" + roomType.getName()
+                        + "' supera su capacidad máxima (" + maxGuestsForItem + ")");
+            }
+
+            RatePlan ratePlan = null;
+            BigDecimal pricePerNight = roomType.getBasePricePerNight();
+            if (item.getRatePlanId() != null) {
+                ratePlan = ratePlanRepository.findById(item.getRatePlanId())
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Tarifa no encontrada con id: " + item.getRatePlanId()));
+
+                if (ratePlan.getRoomType() == null || !ratePlan.getRoomType().getId().equals(roomType.getId())) {
+                    throw new BadRequestException("La tarifa seleccionada no pertenece al tipo de habitación indicado");
+                }
+                if (Boolean.FALSE.equals(ratePlan.getIsActive())) {
+                    throw new BadRequestException("La tarifa seleccionada no se encuentra disponible");
+                }
+                pricePerNight = ratePlan.getPricePerNight();
+            }
+
+            BigDecimal subtotal = pricePerNight
+                    .multiply(BigDecimal.valueOf(item.getQuantity()))
+                    .multiply(BigDecimal.valueOf(totalNights))
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            bookingItems.add(BookingItem.builder()
+                    .roomType(roomType)
+                    .ratePlan(ratePlan)
+                    .quantity(item.getQuantity())
+                    .guests(item.getGuests())
+                    .pricePerNight(pricePerNight)
+                    .subtotal(subtotal)
+                    .build());
+
+            totalAmount = totalAmount.add(subtotal);
+            totalGuests += item.getGuests();
+            totalRequestedUnits += item.getQuantity();
+            requestedUnitsByRoomType.merge(roomType.getId(), item.getQuantity(), Integer::sum);
+        }
+
+        totalAmount = totalAmount.setScale(2, RoundingMode.HALF_UP);
+
+        // Precio por noche promedio ponderado sobre todas las unidades reservadas
+        BigDecimal pricePerNight = totalAmount.divide(
+                BigDecimal.valueOf((long) totalNights * totalRequestedUnits), 2, RoundingMode.HALF_UP);
+
+        int downPaymentPct = accommodation.getDownPaymentPercentage() != null ? accommodation.getDownPaymentPercentage() : 50;
+        BigDecimal downPaymentAmount = totalAmount.multiply(BigDecimal.valueOf(downPaymentPct))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal remainingBalance = totalAmount.subtract(downPaymentAmount);
+
+        User tourist = null;
+        if (currentUser != null && currentUser.getId() != null) {
+            tourist = userRepository.findById(currentUser.getId()).orElse(null);
+        }
+
+        Booking booking = Booking.builder()
+                .bookingCode(generateUniqueBookingCode())
+                .accommodation(accommodation)
+                .tourist(tourist)
+                .checkIn(dto.getCheckIn())
+                .checkOut(dto.getCheckOut())
+                .totalNights(totalNights)
+                .guestCount(totalGuests)
+                .pricePerNight(pricePerNight)
+                .totalAmount(totalAmount)
+                .downPaymentPercentage(downPaymentPct)
+                .downPaymentAmount(downPaymentAmount)
+                .remainingBalance(remainingBalance)
+                .status(BookingStatus.PENDING)
+                .guestName(dto.getGuestName().trim())
+                .guestEmail(dto.getGuestEmail().trim().toLowerCase())
+                .guestPhone(dto.getGuestPhone().trim())
+                .guestOrigin(dto.getGuestOrigin() != null ? dto.getGuestOrigin().trim() : null)
+                .notes(dto.getNotes() != null ? dto.getNotes().trim() : null)
+                .build();
+
+        Booking savedBooking = bookingRepository.save(booking);
+
+        for (BookingItem bookingItem : bookingItems) {
+            bookingItem.setBooking(savedBooking);
+            savedBooking.getItems().add(bookingItem);
+        }
+        bookingItemRepository.saveAll(bookingItems);
+
         emailService.sendVoucherEmails(savedBooking);
         return mapToResponseDto(savedBooking);
     }
@@ -329,6 +506,12 @@ public class BookingService {
                 ? booking.getRemainingBalance()
                 : booking.getTotalAmount().subtract(dpAmount);
 
+        List<BookingItemResponseDto> itemDtos = booking.getItems() != null
+                ? booking.getItems().stream()
+                .map(BookingItemResponseDto::fromEntity)
+                .collect(Collectors.toList())
+                : new ArrayList<>();
+
         return BookingResponseDto.builder()
                 .id(booking.getId())
                 .bookingCode(booking.getBookingCode())
@@ -356,6 +539,7 @@ public class BookingService {
                 .notes(booking.getNotes())
                 .createdAt(booking.getCreatedAt())
                 .updatedAt(booking.getUpdatedAt())
+                .items(itemDtos)
                 .build();
     }
 }

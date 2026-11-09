@@ -6,6 +6,8 @@ import com.upc.demo.entidad.Alert;
 import com.upc.demo.entidad.Attraction;
 import com.upc.demo.entidad.AttractionImage;
 import com.upc.demo.entidad.Event;
+import com.upc.demo.entidad.RatePlan;
+import com.upc.demo.entidad.RoomType;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.AccommodationType;
 import com.upc.demo.entidad.enums.AlertSeverity;
@@ -17,6 +19,8 @@ import com.upc.demo.repositorio.AccommodationRepository;
 import com.upc.demo.repositorio.AlertRepository;
 import com.upc.demo.repositorio.AttractionRepository;
 import com.upc.demo.repositorio.EventRepository;
+import com.upc.demo.repositorio.RatePlanRepository;
+import com.upc.demo.repositorio.RoomTypeRepository;
 import com.upc.demo.repositorio.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +47,8 @@ public class DataInitializer implements CommandLineRunner {
     private final AttractionRepository attractionRepository;
     private final AlertRepository alertRepository;
     private final EventRepository eventRepository;
+    private final RoomTypeRepository roomTypeRepository;
+    private final RatePlanRepository ratePlanRepository;
 
     @Override
     @Transactional
@@ -224,6 +230,91 @@ public class DataInitializer implements CommandLineRunner {
             accommodationRepository.save(cabin2);
             log.info("✔ Prestador 3 registrado: Carlos Benítez - Refugio de Montaña Los Alazanes");
         }
+
+        // Inventario multi-unidad de la hostería: se siembra una sola vez por alojamiento
+        userRepository.findByEmail(host2Email)
+                .flatMap(host2Saved -> accommodationRepository.findByHostId(host2Saved.getId()).stream()
+                        .filter(a -> "Hostería Boutique Los Nogales".equals(a.getName()))
+                        .findFirst())
+                .ifPresent(this::initRoomTypesForHotel);
+    }
+
+    private void initRoomTypesForHotel(Accommodation hotel) {
+        if (roomTypeRepository.countByAccommodationId(hotel.getId()) > 0) {
+            return;
+        }
+
+        RoomType standardDoble = RoomType.builder()
+                .accommodation(hotel)
+                .name("Standard Doble")
+                .description("Habitación doble con baño privado, ideal para parejas o viajeros solos.")
+                .baseCapacity(2)
+                .maxCapacity(2)
+                .beds(2)
+                .totalUnits(6)
+                .basePricePerNight(new BigDecimal("120000.00"))
+                .isActive(true)
+                .amenities(new ArrayList<>(Arrays.asList("Wi-Fi", "TV", "Baño privado")))
+                .ratePlans(new ArrayList<>())
+                .build();
+
+        RatePlan tarifaFlexible = RatePlan.builder()
+                .roomType(standardDoble)
+                .name("Tarifa flexible")
+                .description("Cancelación sin cargo hasta 48 horas antes del check-in.")
+                .pricePerNight(new BigDecimal("120000.00"))
+                .includesBreakfast(false)
+                .freeCancellation(true)
+                .minNights(1)
+                .isActive(true)
+                .build();
+
+        RatePlan desayunoIncluido = RatePlan.builder()
+                .roomType(standardDoble)
+                .name("Desayuno incluido")
+                .description("Incluye desayuno serrano casero servido en el parque.")
+                .pricePerNight(new BigDecimal("135000.00"))
+                .includesBreakfast(true)
+                .freeCancellation(true)
+                .minNights(1)
+                .isActive(true)
+                .build();
+
+        standardDoble.getRatePlans().add(tarifaFlexible);
+        standardDoble.getRatePlans().add(desayunoIncluido);
+
+        RoomType superior = RoomType.builder()
+                .accommodation(hotel)
+                .name("Superior")
+                .description("Habitación amplia con vista al cerro y espacio para una cama adicional.")
+                .baseCapacity(2)
+                .maxCapacity(3)
+                .beds(2)
+                .totalUnits(3)
+                .basePricePerNight(new BigDecimal("165000.00"))
+                .isActive(true)
+                .amenities(new ArrayList<>(Arrays.asList("Wi-Fi", "TV", "Baño privado", "Vista al cerro")))
+                .ratePlans(new ArrayList<>())
+                .build();
+
+        RoomType suite = RoomType.builder()
+                .accommodation(hotel)
+                .name("Suite")
+                .description("Suite con jacuzzi, vista al cerro y sector de estar independiente.")
+                .baseCapacity(3)
+                .maxCapacity(4)
+                .beds(3)
+                .totalUnits(1)
+                .basePricePerNight(new BigDecimal("220000.00"))
+                .isActive(true)
+                .amenities(new ArrayList<>(Arrays.asList("Wi-Fi", "TV", "Baño privado", "Vista al cerro", "Jacuzzi")))
+                .ratePlans(new ArrayList<>())
+                .build();
+
+        roomTypeRepository.saveAll(List.of(standardDoble, superior, suite));
+        ratePlanRepository.saveAll(List.of(tarifaFlexible, desayunoIncluido));
+
+        log.info("✔ Inventario multi-unidad sembrado para la Hostería Boutique Los Nogales (3 tipos de habitación)");
     }
 
     private void initAttractions() {

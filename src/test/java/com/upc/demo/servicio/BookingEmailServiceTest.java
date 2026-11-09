@@ -7,8 +7,11 @@ import com.upc.demo.entidad.Booking;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.BookingStatus;
 import com.upc.demo.repositorio.AccommodationRepository;
+import com.upc.demo.repositorio.BookingItemRepository;
 import com.upc.demo.repositorio.BookingRepository;
 import com.upc.demo.repositorio.DateBlockRepository;
+import com.upc.demo.repositorio.RatePlanRepository;
+import com.upc.demo.repositorio.RoomTypeRepository;
 import com.upc.demo.repositorio.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,6 +47,15 @@ class BookingEmailServiceTest {
     private DateBlockRepository dateBlockRepository;
 
     @Mock
+    private RoomTypeRepository roomTypeRepository;
+
+    @Mock
+    private RatePlanRepository ratePlanRepository;
+
+    @Mock
+    private BookingItemRepository bookingItemRepository;
+
+    @Mock
     private EmailService emailService;
 
     @InjectMocks
@@ -75,6 +87,7 @@ class BookingEmailServiceTest {
                 .build();
 
         when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+        when(roomTypeRepository.countByAccommodationId(accommodationId)).thenReturn(0L);
         when(bookingRepository.existsOverlappingBooking(any(), any(), any())).thenReturn(false);
         when(bookingRepository.findByBookingCode(any())).thenReturn(Optional.empty());
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
@@ -116,6 +129,7 @@ class BookingEmailServiceTest {
                 .build();
 
         when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+        when(roomTypeRepository.countByAccommodationId(accommodationId)).thenReturn(0L);
         when(bookingRepository.existsOverlappingBooking(any(), any(), any())).thenReturn(false);
         when(dateBlockRepository.existsOverlappingBlock(any(), any(), any())).thenReturn(true);
 
@@ -124,6 +138,41 @@ class BookingEmailServiceTest {
                 .hasMessageContaining("fechas bloqueadas");
 
         verify(emailService, org.mockito.Mockito.never()).sendVoucherEmails(any(Booking.class));
+    }
+
+    @Test
+    @DisplayName("createBooking debe exigir tipo de habitación cuando el alojamiento opera con inventario multi-unidad")
+    void createBooking_multiUnitAccommodationWithoutItems_throwsBadRequest() {
+        UUID accommodationId = UUID.randomUUID();
+        User host = User.builder().id(UUID.randomUUID()).email("host@capilla.com").build();
+        Accommodation accommodation = Accommodation.builder()
+                .id(accommodationId)
+                .host(host)
+                .name("Hostería Boutique Los Nogales")
+                .pricePerNight(BigDecimal.valueOf(120000))
+                .maxGuests(4)
+                .isActive(true)
+                .downPaymentPercentage(30)
+                .build();
+
+        CreateBookingDto dto = CreateBookingDto.builder()
+                .accommodationId(accommodationId)
+                .checkIn(LocalDate.now().plusDays(2))
+                .checkOut(LocalDate.now().plusDays(5))
+                .guestCount(2)
+                .guestName("Martina Gómez")
+                .guestEmail("turista@email.com")
+                .guestPhone("+54 9 351 555-1234")
+                .build();
+
+        when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+        when(roomTypeRepository.countByAccommodationId(accommodationId)).thenReturn(3L);
+
+        assertThatThrownBy(() -> bookingService.createBooking(dto, null))
+                .isInstanceOf(com.upc.demo.config.exception.BadRequestException.class)
+                .hasMessageContaining("tipos de habitación");
+
+        verify(bookingRepository, org.mockito.Mockito.never()).save(any(Booking.class));
     }
 
     @Test
