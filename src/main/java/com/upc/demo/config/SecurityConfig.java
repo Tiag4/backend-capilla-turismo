@@ -90,6 +90,12 @@ public class SecurityConfig {
                         // Catalogo publico de atractivos turisticos
                         .requestMatchers(HttpMethod.GET, "/api/v1/attractions/**").permitAll()
 
+                        // Eventos culturales publicos (agenda municipal)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
+
+                        // Adhesion comercial: postulacion publica
+                        .requestMatchers(HttpMethod.POST, "/api/v1/merchants/apply").permitAll()
+
                         // Alertas meteorologicas y de seguridad publica
                         .requestMatchers(HttpMethod.GET, "/api/v1/alerts/active").permitAll()
                         
