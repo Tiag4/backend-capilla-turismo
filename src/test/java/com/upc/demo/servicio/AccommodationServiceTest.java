@@ -48,6 +48,33 @@ class AccommodationServiceTest {
     private AccommodationService accommodationService;
 
     @Test
+    @DisplayName("getAll excluye alojamientos cuyo prestador está suspendido")
+    void getAll_excludesAccommodationsFromSuspendedHosts() {
+        User activeHost = User.builder().id(UUID.randomUUID()).role(Role.HOST).isActive(true).build();
+        User suspendedHost = User.builder().id(UUID.randomUUID()).role(Role.HOST).isActive(false).build();
+
+        Accommodation active = Accommodation.builder()
+                .id(UUID.randomUUID())
+                .name("Cabaña Habilitada")
+                .host(activeHost)
+                .isActive(true)
+                .build();
+        Accommodation suspended = Accommodation.builder()
+                .id(UUID.randomUUID())
+                .name("Cabaña Suspendida")
+                .host(suspendedHost)
+                .isActive(true)
+                .build();
+
+        when(accommodationRepository.findByIsActiveTrue()).thenReturn(List.of(active, suspended));
+
+        List<AccommodationResponseDto> result = accommodationService.getAll(null, null, null, null, null, null, null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getName()).isEqualTo("Cabaña Habilitada");
+    }
+
+    @Test
     @DisplayName("deleteImage debe purgar la imagen de StorageService antes de eliminarla del repositorio")
     void deleteImage_withPublicId_purgesFromStorage() {
         UUID accommodationId = UUID.randomUUID();

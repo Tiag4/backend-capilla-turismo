@@ -3,6 +3,7 @@ package com.upc.demo.servicio;
 import com.upc.demo.config.JwtTokenProvider;
 import com.upc.demo.config.exception.BadRequestException;
 import com.upc.demo.config.exception.ConflictException;
+import com.upc.demo.config.exception.ForbiddenException;
 import com.upc.demo.config.exception.ResourceNotFoundException;
 import com.upc.demo.dto.auth.AuthResponseDto;
 import com.upc.demo.dto.auth.ChangePasswordDto;
@@ -43,6 +44,10 @@ public class AuthService {
 
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new BadCredentialsException("Credenciales invalidas");
+        }
+
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            throw new ForbiddenException("La cuenta del prestador se encuentra suspendida. Contacta a la Camara de Turismo.");
         }
 
         String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole());

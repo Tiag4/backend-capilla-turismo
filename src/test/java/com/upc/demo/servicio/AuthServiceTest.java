@@ -2,8 +2,10 @@ package com.upc.demo.servicio;
 
 import com.upc.demo.config.JwtTokenProvider;
 import com.upc.demo.config.exception.BadRequestException;
+import com.upc.demo.config.exception.ForbiddenException;
 import com.upc.demo.config.exception.ResourceNotFoundException;
 import com.upc.demo.dto.auth.ChangePasswordDto;
+import com.upc.demo.dto.auth.LoginRequestDto;
 import com.upc.demo.dto.auth.UpdateProfileDto;
 import com.upc.demo.dto.auth.UserProfileDto;
 import com.upc.demo.dto.common.MessageResponseDto;
@@ -44,6 +46,29 @@ class AuthServiceTest {
 
     @InjectMocks
     private AuthService authService;
+
+    @Test
+    @DisplayName("login rechaza a un prestador suspendido")
+    void login_suspendedHost_throwsForbidden() {
+        User suspended = User.builder()
+                .id(UUID.randomUUID())
+                .email("host@capilla.com")
+                .password("encoded_password")
+                .role(Role.HOST)
+                .isActive(false)
+                .build();
+
+        LoginRequestDto dto = LoginRequestDto.builder()
+                .email("host@capilla.com")
+                .password("Secret123!")
+                .build();
+
+        when(userRepository.findByEmail("host@capilla.com")).thenReturn(Optional.of(suspended));
+        when(passwordEncoder.matches("Secret123!", "encoded_password")).thenReturn(true);
+
+        assertThrows(ForbiddenException.class, () -> authService.login(dto));
+        verify(jwtTokenProvider, never()).generateToken(any(), any(), any());
+    }
 
     @Test
     @DisplayName("updateProfile actualiza nombre, apellido y teléfono exitosamente")
