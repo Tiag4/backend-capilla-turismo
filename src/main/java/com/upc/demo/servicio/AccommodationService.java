@@ -58,6 +58,10 @@ public class AccommodationService {
             accommodations = accommodationRepository.findByIsActiveTrue();
         }
 
+        accommodations = accommodations.stream()
+                .filter(this::isHostEnabled)
+                .collect(Collectors.toList());
+
         if (type != null) {
             accommodations = accommodations.stream()
                     .filter(a -> a.getType() == type)
@@ -109,6 +113,14 @@ public class AccommodationService {
 
     @Transactional(readOnly = true)
     public List<AccommodationResponseDto> getMyAccommodations(UUID hostId) {
+        return accommodationRepository.findByHostId(hostId)
+                .stream()
+                .map(AccommodationResponseDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AccommodationResponseDto> getByHostId(UUID hostId) {
         return accommodationRepository.findByHostId(hostId)
                 .stream()
                 .map(AccommodationResponseDto::fromEntity)
@@ -286,6 +298,10 @@ public class AccommodationService {
         }
 
         accommodationImageRepository.delete(image);
+    }
+
+    private boolean isHostEnabled(Accommodation accommodation) {
+        return accommodation.getHost() != null && Boolean.TRUE.equals(accommodation.getHost().getIsActive());
     }
 
     private Accommodation findAccommodationById(UUID id) {
