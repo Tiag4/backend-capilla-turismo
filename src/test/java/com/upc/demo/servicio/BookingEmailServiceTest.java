@@ -215,6 +215,24 @@ class BookingEmailServiceTest {
     }
 
     @Test
+    @DisplayName("updateStatus debe notificar al turista también al cancelar una reserva")
+    void updateStatus_cancelled_notifiesGuest() {
+        Booking booking = buildBooking();
+        when(bookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(booking)).thenReturn(booking);
+        when(emailService.sendVoucherEmails(booking)).thenReturn(true);
+
+        bookingService.updateStatus(
+                booking.getId(),
+                BookingStatus.CANCELLED,
+                booking.getAccommodation().getHost().getId(),
+                false
+        );
+
+        verify(emailService).sendVoucherEmails(booking);
+    }
+
+    @Test
     @DisplayName("resendVoucherToGuest debe enviar el voucher al turista por código y email")
     void resendVoucherByCode_sendsEmail() {
         Booking booking = buildBooking();
