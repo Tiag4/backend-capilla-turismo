@@ -24,6 +24,7 @@ public class UserPrincipal implements UserDetails {
     private final String name;
     private final String lastName;
     private final Role role;
+    private final Boolean isActive;
     private final Collection<? extends GrantedAuthority> authorities;
 
     public static UserPrincipal create(User user) {
@@ -35,6 +36,7 @@ public class UserPrincipal implements UserDetails {
                 .name(user.getName())
                 .lastName(user.getLastName())
                 .role(user.getRole())
+                .isActive(user.getIsActive() != null ? user.getIsActive() : Boolean.TRUE)
                 .authorities(Collections.singletonList(authority))
                 .build();
     }
@@ -71,6 +73,6 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return Boolean.TRUE.equals(isActive);
     }
 }
