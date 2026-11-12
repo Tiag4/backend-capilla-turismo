@@ -77,6 +77,10 @@ public class BookingService {
             throw new BadRequestException("El alojamiento no se encuentra disponible para reservas");
         }
 
+        if (accommodation.getHost() == null || Boolean.FALSE.equals(accommodation.getHost().getIsActive())) {
+            throw new BadRequestException("El prestador no se encuentra habilitado para recibir reservas");
+        }
+
         // 3. Rama multi-unidad: si la reserva incluye ítems se usa el motor de allotment por tipo de habitación
         if (dto.getItems() != null && !dto.getItems().isEmpty()) {
             return createMultiUnitBooking(dto, accommodation, (int) totalNights, currentUser);
