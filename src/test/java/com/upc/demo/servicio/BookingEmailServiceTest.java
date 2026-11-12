@@ -104,6 +104,45 @@ class BookingEmailServiceTest {
     }
 
     @Test
+    @DisplayName("createBooking debe rechazar reservas de prestadores suspendidos")
+    void createBooking_suspendedHost_throwsBadRequest() {
+        UUID accommodationId = UUID.randomUUID();
+        User host = User.builder()
+                .id(UUID.randomUUID())
+                .email("host@capilla.com")
+                .isActive(false)
+                .build();
+        Accommodation accommodation = Accommodation.builder()
+                .id(accommodationId)
+                .host(host)
+                .name("Cabaña Suspendida")
+                .pricePerNight(BigDecimal.valueOf(80000))
+                .maxGuests(4)
+                .isActive(true)
+                .downPaymentPercentage(50)
+                .build();
+
+        CreateBookingDto dto = CreateBookingDto.builder()
+                .accommodationId(accommodationId)
+                .checkIn(LocalDate.now().plusDays(2))
+                .checkOut(LocalDate.now().plusDays(5))
+                .guestCount(2)
+                .guestName("Martina Gómez")
+                .guestEmail("turista@email.com")
+                .guestPhone("+54 9 351 555-1234")
+                .build();
+
+        when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+
+        assertThatThrownBy(() -> bookingService.createBooking(dto, null))
+                .isInstanceOf(com.upc.demo.config.exception.BadRequestException.class)
+                .hasMessageContaining("prestador");
+
+        verify(bookingRepository, org.mockito.Mockito.never()).save(any(Booking.class));
+        verify(emailService, org.mockito.Mockito.never()).sendVoucherEmails(any(Booking.class));
+    }
+
+    @Test
     @DisplayName("createBooking debe rechazar fechas bloqueadas por mantenimiento")
     void createBooking_blockedDates_throwsConflict() {
         UUID accommodationId = UUID.randomUUID();
