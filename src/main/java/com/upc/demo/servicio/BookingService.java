@@ -334,9 +334,7 @@ public class BookingService {
 
         booking.setStatus(newStatus);
         Booking updatedBooking = bookingRepository.save(booking);
-        if (newStatus == BookingStatus.CONFIRMED) {
-            emailService.sendVoucherEmails(updatedBooking);
-        }
+        emailService.sendVoucherEmails(updatedBooking);
         return mapToResponseDto(updatedBooking);
     }
 
