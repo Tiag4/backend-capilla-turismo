@@ -108,6 +108,7 @@ public class SecurityConfig {
                         // Alertas meteorologicas y de seguridad publica
                         .requestMatchers(HttpMethod.GET, "/api/v1/alerts/active").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/emergency-sanitary/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/seasons/**").permitAll()
                         
                         // Reservas: creacion y consulta publica (lookup)
                         .requestMatchers(HttpMethod.POST, "/api/v1/bookings").permitAll()

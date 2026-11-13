@@ -10,7 +10,9 @@ import com.upc.demo.entidad.HealthGuardNotice;
 import com.upc.demo.entidad.Pharmacy;
 import com.upc.demo.entidad.RatePlan;
 import com.upc.demo.entidad.RoomType;
+import com.upc.demo.entidad.TourismSeason;
 import com.upc.demo.entidad.User;
+import com.upc.demo.entidad.enums.SeasonType;
 import com.upc.demo.entidad.enums.AccommodationType;
 import com.upc.demo.entidad.enums.AlertSeverity;
 import com.upc.demo.entidad.enums.AttractionCategory;
@@ -25,6 +27,7 @@ import com.upc.demo.repositorio.HealthGuardNoticeRepository;
 import com.upc.demo.repositorio.PharmacyRepository;
 import com.upc.demo.repositorio.RatePlanRepository;
 import com.upc.demo.repositorio.RoomTypeRepository;
+import com.upc.demo.repositorio.TourismSeasonRepository;
 import com.upc.demo.repositorio.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +58,7 @@ public class DataInitializer implements CommandLineRunner {
     private final RatePlanRepository ratePlanRepository;
     private final PharmacyRepository pharmacyRepository;
     private final HealthGuardNoticeRepository healthGuardNoticeRepository;
+    private final TourismSeasonRepository tourismSeasonRepository;
 
     @Override
     @Transactional
@@ -65,6 +69,7 @@ public class DataInitializer implements CommandLineRunner {
         initAlerts();
         initEvents();
         initEmergencySanitary();
+        initSeasons();
     }
 
     private void initAdmin() {
@@ -610,6 +615,51 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
             healthGuardNoticeRepository.save(defaultHospital);
             log.info("✔ Ficha oficial de guardia médica del Hospital Municipal sembrada con éxito");
+        }
+    }
+
+    private void initSeasons() {
+        if (tourismSeasonRepository.count() == 0) {
+            List<TourismSeason> defaultSeasons = List.of(
+                    TourismSeason.builder()
+                            .name("Temporada Alta de Verano")
+                            .type(SeasonType.HIGH)
+                            .startDate(LocalDate.of(2027, 1, 1))
+                            .endDate(LocalDate.of(2027, 2, 28))
+                            .suggestedMultiplier(1.4)
+                            .description("Afluencia masiva a balnearios (La Toma, Calabalumba) y ascenso nocturno al Uritorco.")
+                            .isActive(true)
+                            .build(),
+                    TourismSeason.builder()
+                            .name("Festival Alienígena & Encuentro OVNI")
+                            .type(SeasonType.SPECIAL_EVENT)
+                            .startDate(LocalDate.of(2027, 2, 12))
+                            .endDate(LocalDate.of(2027, 2, 16))
+                            .suggestedMultiplier(1.6)
+                            .description("Fiesta oficial en la Calle Techada con desfile de disfraces, conferencias y ocupación al 100%.")
+                            .isActive(true)
+                            .build(),
+                    TourismSeason.builder()
+                            .name("Semana Santa Serrana")
+                            .type(SeasonType.HIGH)
+                            .startDate(LocalDate.of(2027, 3, 25))
+                            .endDate(LocalDate.of(2027, 3, 29))
+                            .suggestedMultiplier(1.5)
+                            .description("Fin de semana largo de turismo religioso, senderismo en Los Terrones y gastronomía regional.")
+                            .isActive(true)
+                            .build(),
+                    TourismSeason.builder()
+                            .name("Vacaciones de Invierno")
+                            .type(SeasonType.MEDIUM)
+                            .startDate(LocalDate.of(2026, 7, 6))
+                            .endDate(LocalDate.of(2026, 7, 26))
+                            .suggestedMultiplier(1.3)
+                            .description("Receso invernal escolar nacional con turismo familiar y ecoturismo.")
+                            .isActive(true)
+                            .build()
+            );
+            tourismSeasonRepository.saveAll(defaultSeasons);
+            log.info("Temporadas turisticas iniciales sembradas con exito (4 temporadas)");
         }
     }
 }
