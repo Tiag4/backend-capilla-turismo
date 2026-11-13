@@ -142,6 +142,16 @@ public class AccommodationService {
                 .longitude(dto.getLongitude())
                 .pricePerNight(dto.getPricePerNight())
                 .maxGuests(dto.getMaxGuests())
+                .unitTitle(dto.getUnitTitle() != null ? dto.getUnitTitle().trim() : null)
+                .surfaceSqm(dto.getSurfaceSqm())
+                .bedroomsSummary(dto.getBedroomsSummary() != null ? dto.getBedroomsSummary().trim() : null)
+                .phone(dto.getPhone() != null ? dto.getPhone().trim() : null)
+                .checkInTime(dto.getCheckInTime() != null && !dto.getCheckInTime().isBlank() ? dto.getCheckInTime().trim() : "14:00 hs")
+                .checkOutTime(dto.getCheckOutTime() != null && !dto.getCheckOutTime().isBlank() ? dto.getCheckOutTime().trim() : "10:00 hs")
+                .petPolicy(dto.getPetPolicy() != null ? dto.getPetPolicy().trim() : null)
+                .cancellationPolicy(dto.getCancellationPolicy() != null ? dto.getCancellationPolicy().trim() : null)
+                .licenseNumber(dto.getLicenseNumber() != null ? dto.getLicenseNumber().trim() : null)
+                .responseTime(dto.getResponseTime() != null ? dto.getResponseTime().trim() : null)
                 .hasBreakfast(dto.getHasBreakfast() != null ? dto.getHasBreakfast() : false)
                 .breakfastType(dto.getBreakfastType() != null ? dto.getBreakfastType().trim() : null)
                 .amenities(dto.getAmenities() != null ? new ArrayList<>(dto.getAmenities()) : new ArrayList<>())
@@ -202,6 +212,36 @@ public class AccommodationService {
         }
         if (dto.getMaxGuests() != null) {
             accommodation.setMaxGuests(dto.getMaxGuests());
+        }
+        if (dto.getUnitTitle() != null) {
+            accommodation.setUnitTitle(dto.getUnitTitle().trim());
+        }
+        if (dto.getSurfaceSqm() != null) {
+            accommodation.setSurfaceSqm(dto.getSurfaceSqm());
+        }
+        if (dto.getBedroomsSummary() != null) {
+            accommodation.setBedroomsSummary(dto.getBedroomsSummary().trim());
+        }
+        if (dto.getPhone() != null) {
+            accommodation.setPhone(dto.getPhone().trim());
+        }
+        if (dto.getCheckInTime() != null && !dto.getCheckInTime().isBlank()) {
+            accommodation.setCheckInTime(dto.getCheckInTime().trim());
+        }
+        if (dto.getCheckOutTime() != null && !dto.getCheckOutTime().isBlank()) {
+            accommodation.setCheckOutTime(dto.getCheckOutTime().trim());
+        }
+        if (dto.getPetPolicy() != null) {
+            accommodation.setPetPolicy(dto.getPetPolicy().trim());
+        }
+        if (dto.getCancellationPolicy() != null) {
+            accommodation.setCancellationPolicy(dto.getCancellationPolicy().trim());
+        }
+        if (dto.getLicenseNumber() != null) {
+            accommodation.setLicenseNumber(dto.getLicenseNumber().trim());
+        }
+        if (dto.getResponseTime() != null) {
+            accommodation.setResponseTime(dto.getResponseTime().trim());
         }
         if (dto.getHasBreakfast() != null) {
             accommodation.setHasBreakfast(dto.getHasBreakfast());

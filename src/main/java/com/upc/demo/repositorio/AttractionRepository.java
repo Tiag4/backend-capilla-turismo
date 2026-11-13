@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -14,4 +15,5 @@ public interface AttractionRepository extends JpaRepository<Attraction, UUID>, J
     List<Attraction> findByCategory(AttractionCategory category);
     List<Attraction> findByDifficulty(String difficulty);
     boolean existsByName(String name);
+    Optional<Attraction> findByName(String name);
 }

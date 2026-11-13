@@ -5,36 +5,41 @@ import com.upc.demo.config.exception.BadRequestException;
 import com.upc.demo.config.exception.ConflictException;
 import com.upc.demo.config.exception.ForbiddenException;
 import com.upc.demo.config.exception.ResourceNotFoundException;
-import com.upc.demo.dto.auth.AuthResponseDto;
-import com.upc.demo.dto.auth.ChangePasswordDto;
-import com.upc.demo.dto.auth.LoginRequestDto;
-import com.upc.demo.dto.auth.RegisterHostDto;
-import com.upc.demo.dto.auth.RegisterTouristDto;
-import com.upc.demo.dto.auth.UpdateProfileDto;
-import com.upc.demo.dto.auth.UserProfileDto;
+import com.upc.demo.dto.auth.*;
 import com.upc.demo.dto.common.MessageResponseDto;
 import com.upc.demo.entidad.InvitationToken;
+import com.upc.demo.entidad.PasswordResetCode;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.Role;
 import com.upc.demo.repositorio.InvitationTokenRepository;
+import com.upc.demo.repositorio.PasswordResetCodeRepository;
 import com.upc.demo.repositorio.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final UserRepository userRepository;
     private final InvitationTokenRepository invitationTokenRepository;
+    private final PasswordResetCodeRepository passwordResetCodeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailService emailService;
 
     @Transactional(readOnly = true)
     public AuthResponseDto login(LoginRequestDto dto) {
@@ -170,6 +175,94 @@ public class AuthService {
 
         return MessageResponseDto.builder()
                 .message("Contraseña actualizada exitosamente")
+                .build();
+    }
+
+    @Transactional
+    public MessageResponseDto sendPasswordResetOtp(ForgotPasswordRequestDto dto) {
+        String cleanEmail = dto.getEmail().toLowerCase().trim();
+        Optional<User> userOpt = userRepository.findByEmail(cleanEmail);
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+
+            // Invalida codigos activos previos para este email
+            List<PasswordResetCode> activeCodes = passwordResetCodeRepository.findAllByEmailAndUsedAtIsNull(cleanEmail);
+            for (PasswordResetCode activeCode : activeCodes) {
+                activeCode.setUsedAt(LocalDateTime.now());
+            }
+            passwordResetCodeRepository.saveAll(activeCodes);
+
+            // Genera codigo criptograficamente seguro de 6 digitos (000000 - 999999)
+            String code = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
+
+            PasswordResetCode resetCode = PasswordResetCode.builder()
+                    .email(cleanEmail)
+                    .code(code)
+                    .attempts(0)
+                    .expiresAt(LocalDateTime.now().plusMinutes(15))
+                    .build();
+
+            passwordResetCodeRepository.save(resetCode);
+            emailService.sendPasswordResetOtp(user.getEmail(), user.getName(), code);
+            log.info("Codigo OTP de recuperacion generado para el usuario {}", cleanEmail);
+        } else {
+            log.info("Solicitud de recuperacion para email no registrado: {} (respuesta anti-enumeracion)", cleanEmail);
+        }
+
+        // Respuesta generica obligatoria para prevenir enumeracion de cuentas
+        return MessageResponseDto.builder()
+                .message("Si el correo electrónico está registrado, recibirás un código de 6 dígitos en breve.")
+                .build();
+    }
+
+    @Transactional
+    public MessageResponseDto resetPasswordWithOtp(ResetPasswordRequestDto dto) {
+        String cleanEmail = dto.getEmail().toLowerCase().trim();
+        User user = userRepository.findByEmail(cleanEmail)
+                .orElseThrow(() -> new BadRequestException("El código de recuperación es inválido o ha expirado."));
+
+        PasswordResetCode resetCode = passwordResetCodeRepository
+                .findTopByEmailAndUsedAtIsNullOrderByCreatedAtDesc(cleanEmail)
+                .orElseThrow(() -> new BadRequestException("El código de recuperación es inválido o ha expirado."));
+
+        if (resetCode.getExpiresAt().isBefore(LocalDateTime.now())) {
+            resetCode.setUsedAt(LocalDateTime.now());
+            passwordResetCodeRepository.save(resetCode);
+            throw new BadRequestException("El código de recuperación ha expirado (validez: 15 minutos). Solicitá uno nuevo.");
+        }
+
+        if (resetCode.getAttempts() >= 5) {
+            resetCode.setUsedAt(LocalDateTime.now());
+            passwordResetCodeRepository.save(resetCode);
+            throw new BadRequestException("Has superado el límite de 5 intentos fallidos permitidos. Solicitá un nuevo código.");
+        }
+
+        resetCode.setAttempts(resetCode.getAttempts() + 1);
+
+        if (!resetCode.getCode().equals(dto.getCode().trim())) {
+            passwordResetCodeRepository.save(resetCode);
+            int remaining = 5 - resetCode.getAttempts();
+            if (remaining > 0) {
+                throw new BadRequestException("Código incorrecto. Te quedan " + remaining + " intento(s).");
+            } else {
+                resetCode.setUsedAt(LocalDateTime.now());
+                passwordResetCodeRepository.save(resetCode);
+                throw new BadRequestException("Has superado el límite de 5 intentos fallidos permitidos. Solicitá un nuevo código.");
+            }
+        }
+
+        // Codigo correcto -> Marcar como consumido y actualizar password
+        resetCode.setUsedAt(LocalDateTime.now());
+        passwordResetCodeRepository.save(resetCode);
+
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userRepository.save(user);
+
+        log.info("Contraseña restablecida exitosamente via OTP para {}", cleanEmail);
+
+        return MessageResponseDto.builder()
+                .message("Contraseña restablecida exitosamente. Ya podés iniciar sesión con tu nueva clave.")
                 .build();
     }
 }

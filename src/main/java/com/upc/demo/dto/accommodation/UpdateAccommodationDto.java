@@ -42,6 +42,36 @@ public class UpdateAccommodationDto {
     @Min(value = 1, message = "La capacidad maxima debe ser al menos 1 huesped")
     private Integer maxGuests;
 
+    @Size(max = 150, message = "El título de la unidad no puede exceder 150 caracteres")
+    private String unitTitle;
+
+    @Min(value = 1, message = "La superficie debe ser al menos 1 m²")
+    private Integer surfaceSqm;
+
+    @Size(max = 300, message = "El resumen de dormitorios no puede exceder 300 caracteres")
+    private String bedroomsSummary;
+
+    @Size(max = 30, message = "El teléfono no puede exceder 30 caracteres")
+    private String phone;
+
+    @Size(max = 20, message = "El horario de check-in no puede exceder 20 caracteres")
+    private String checkInTime;
+
+    @Size(max = 20, message = "El horario de check-out no puede exceder 20 caracteres")
+    private String checkOutTime;
+
+    @Size(max = 250, message = "La política de mascotas no puede exceder 250 caracteres")
+    private String petPolicy;
+
+    @Size(max = 300, message = "La política de cancelación no puede exceder 300 caracteres")
+    private String cancellationPolicy;
+
+    @Size(max = 60, message = "El número de habilitación o matrícula no puede exceder 60 caracteres")
+    private String licenseNumber;
+
+    @Size(max = 60, message = "El tiempo de respuesta no puede exceder 60 caracteres")
+    private String responseTime;
+
     private Boolean hasBreakfast;
 
     @Size(max = 150, message = "El tipo de desayuno no puede exceder 150 caracteres")

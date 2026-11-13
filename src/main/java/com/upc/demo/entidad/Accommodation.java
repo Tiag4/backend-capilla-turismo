@@ -51,6 +51,38 @@ public class Accommodation {
     @Column(name = "max_guests", nullable = false)
     private Integer maxGuests;
 
+    @Column(name = "unit_title", length = 150)
+    private String unitTitle;
+
+    @Column(name = "surface_sqm")
+    private Integer surfaceSqm;
+
+    @Column(name = "bedrooms_summary", length = 300)
+    private String bedroomsSummary;
+
+    @Column(length = 30)
+    private String phone;
+
+    @Column(name = "check_in_time", length = 20)
+    @Builder.Default
+    private String checkInTime = "14:00 hs";
+
+    @Column(name = "check_out_time", length = 20)
+    @Builder.Default
+    private String checkOutTime = "10:00 hs";
+
+    @Column(name = "pet_policy", length = 250)
+    private String petPolicy;
+
+    @Column(name = "cancellation_policy", length = 300)
+    private String cancellationPolicy;
+
+    @Column(name = "license_number", length = 60)
+    private String licenseNumber;
+
+    @Column(name = "response_time", length = 60)
+    private String responseTime;
+
     @ElementCollection
     @CollectionTable(name = "accommodation_amenities", joinColumns = @JoinColumn(name = "accommodation_id"))
     @Column(name = "amenity")

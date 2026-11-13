@@ -31,6 +31,16 @@ public class AccommodationResponseDto {
     private Double longitude;
     private BigDecimal pricePerNight;
     private Integer maxGuests;
+    private String unitTitle;
+    private Integer surfaceSqm;
+    private String bedroomsSummary;
+    private String phone;
+    private String checkInTime;
+    private String checkOutTime;
+    private String petPolicy;
+    private String cancellationPolicy;
+    private String licenseNumber;
+    private String responseTime;
     private Boolean hasBreakfast;
     private String breakfastType;
     private List<String> amenities;
@@ -45,6 +55,10 @@ public class AccommodationResponseDto {
     private UserProfileDto host;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String inventoryMode;
+
+    @Builder.Default
+    private List<RoomTypeResponseDto> roomTypes = new ArrayList<>();
 
     @Builder.Default
     private List<AccommodationImageDto> images = new ArrayList<>();
@@ -69,6 +83,15 @@ public class AccommodationResponseDto {
                 ? (entity.getHost().getName() + " " + entity.getHost().getLastName()).trim()
                 : null;
 
+        List<RoomTypeResponseDto> roomTypeDtos = entity.getRoomTypes() != null
+                ? entity.getRoomTypes().stream()
+                .filter(rt -> rt.getIsActive() == null || rt.getIsActive())
+                .map(RoomTypeResponseDto::fromEntity)
+                .collect(Collectors.toList())
+                : new ArrayList<>();
+
+        String derivedMode = (!roomTypeDtos.isEmpty()) ? "MULTI_ROOM" : "SINGLE_UNIT";
+
         return AccommodationResponseDto.builder()
                 .id(entity.getId())
                 .name(entity.getName())
@@ -80,6 +103,16 @@ public class AccommodationResponseDto {
                 .longitude(entity.getLongitude())
                 .pricePerNight(entity.getPricePerNight())
                 .maxGuests(entity.getMaxGuests())
+                .unitTitle(entity.getUnitTitle())
+                .surfaceSqm(entity.getSurfaceSqm())
+                .bedroomsSummary(entity.getBedroomsSummary())
+                .phone(entity.getPhone())
+                .checkInTime(entity.getCheckInTime())
+                .checkOutTime(entity.getCheckOutTime())
+                .petPolicy(entity.getPetPolicy())
+                .cancellationPolicy(entity.getCancellationPolicy())
+                .licenseNumber(entity.getLicenseNumber())
+                .responseTime(entity.getResponseTime())
                 .hasBreakfast(entity.getHasBreakfast() != null ? entity.getHasBreakfast() : false)
                 .breakfastType(entity.getBreakfastType())
                 .amenities(entity.getAmenities() != null ? new ArrayList<>(entity.getAmenities()) : new ArrayList<>())
@@ -94,6 +127,8 @@ public class AccommodationResponseDto {
                 .host(hostDto)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
+                .inventoryMode(derivedMode)
+                .roomTypes(roomTypeDtos)
                 .images(imageDtos)
                 .build();
     }
