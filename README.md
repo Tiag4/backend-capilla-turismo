@@ -5,6 +5,7 @@
   <img src="https://img.shields.io/badge/Spring%20Boot-3-brightgreen?style=for-the-badge&logo=springboot" alt="Spring Boot 3">
   <img src="https://img.shields.io/badge/PostgreSQL-18-blue?style=for-the-badge&logo=postgresql" alt="PostgreSQL 18">
   <img src="https://img.shields.io/badge/Spring%20Security-JWT-black?style=for-the-badge&logo=jsonwebtokens" alt="JWT Security">
+  <img src="https://img.shields.io/badge/Cloudinary-CDN%20Storage-3448C5?style=for-the-badge&logo=cloudinary" alt="Cloudinary">
   <img src="https://img.shields.io/badge/OpenAPI-Swagger%20UI-darkgreen?style=for-the-badge&logo=swagger" alt="Swagger UI">
   <img src="https://img.shields.io/badge/Maven-Build-red?style=for-the-badge&logo=apachemaven" alt="Maven">
 </p>
@@ -31,22 +32,25 @@ El sistema nuclea a los prestadores formalmente adheridos y conecta a turistas c
 ### Roles del Sistema
 
 * **Turista (`TOURIST`):** Explora hospedajes y atractivos turísticos en catálogo, filtra por disponibilidad de fechas (`checkIn`/`checkOut`), precio, capacidad y comodidades; realiza reservas directas y consulta el estado de su estadía de forma pública (código y correo) o desde su panel autenticado.
-* **Cabañero / Prestador (`HOST`):** Se registra exclusivamente a través de un token de invitación validado; administra sus establecimientos (alta, edición, baja, comodidades, fotos) y gestiona el ciclo de vida de las reservas recibidas (confirmar, cancelar, completar).
-* **Comisión de Turismo (`ADMIN`):** Administra el portal, modera y gestiona atractivos turísticos, supervisa usuarios y emite tokens de invitación seguros con validez de 7 días para habilitar a prestadores adheridos.
+* **Cabañero / Prestador (`HOST`):** Se registra exclusivamente a través de un token de invitación validado; administra sus establecimientos (alta, edición, baja, comodidades, fotos a Cloudinary), configura inventario multi-unidad (habitaciones y planes tarifarios) y gestiona el ciclo de vida de las reservas recibidas (confirmar, cancelar, completar).
+* **Comisión de Turismo (`ADMIN`):** Administra el portal, modera prestadores con facultad de suspensión preventiva, gestiona atractivos y paseos serranos, emite alertas meteorológicas de Defensa Civil, coordina la agenda cultural y emite tokens de invitación seguros con validez de 7 días.
 
 ---
 
 ## Modelo de Dominio y Entidades (JPA)
 
-El modelo de datos implementa identificación descentralizada mediante **`UUID`** nativo de PostgreSQL, integridad referencial y las cardinalidades requeridas:
+El modelo de datos implementa identificación descentralizada mediante **`UUID`** nativo de PostgreSQL, integridad referencial y transacciones ACID:
 
-1. **`User` (`Usuario`):** Actores del sistema (`ADMIN`, `HOST`, `TOURIST`) con autenticación mediante contraseñas cifradas en BCrypt y control de acceso RBAC.
-2. **`Accommodation` (`Alojamiento / Hospedaje`):** Complejos y cabañas con geolocalización (`latitud`, `longitud`), tipo de alojamiento (`CABIN`, `HOTEL`, `APARTMENT`, `HOSTEL`, `CAMPING`), capacidad de huéspedes, horarios de check-in/check-out y precio por noche. Relación **`N:1`** con `User` (`host`).
-3. **`AccommodationImage` (`Foto de Alojamiento`):** Galería de imágenes asociadas a cada establecimiento. Relación **`N:1`** con `Accommodation`.
-4. **`Attraction` (`Atractivo Turístico / Paseo`):** Circuitos, senderos y excursiones locales clasificados por categorías serranas (`HILL`, `RIVER_BEACH`, `CULTURAL`, `NIGHT`, `NATURE_TRAIL`), nivel de dificultad, coordenadas y si requiere guía habilitado.
-5. **`AttractionImage` (`Foto de Atractivo`):** Galería de fotos vinculadas al atractivo. Relación **`N:1`** con `Attraction`.
-6. **`Booking` (`Reserva`):** Motor de reservas transaccional con prevención anti-overbooking (`checkIn < existingCheckOut && checkOut > existingCheckIn`), cálculo automático de noches y monto total, código único (`CAP-YYYY-XXXX`) y máquina de estados (`PENDING`, `CONFIRMED`, `CANCELLED`, `COMPLETED`). Relación **`N:1`** con `Accommodation` y **`N:1`** opcional con `User` (`tourist`).
-7. **`InvitationToken` (`Token de Invitación`):** Mecanismo de onboarding seguro para prestadores con caducidad a los 7 días y consumo atómico en un único uso. Relación **`N:1`** con `User` (`createdBy`).
+1. **`User` (`Usuario`):** Actores del sistema (`ADMIN`, `HOST`, `TOURIST`) con autenticación mediante contraseñas cifradas en BCrypt, control de acceso RBAC y flag `isActive` para suspensión preventiva.
+2. **`Accommodation` (`Alojamiento / Hospedaje`):** Complejos y cabañas con geolocalización (`latitud`, `longitud`), tipo (`CABIN`, `HOTEL`, `APARTMENT`, `HOSTEL`, `CAMPING`), capacidad de huéspedes, precio base, porcentaje de seña y datos bancarios (CBU / Alias). Relación **`N:1`** con `User` (`host`).
+3. **`RoomType` & `RatePlan` (`Inventario Multi-unidad`):** Habitaciones específicas (Standard, Superior, Suite) con cupo de unidades y planes de tarifa (flexible o desayuno incluido) para hoteles y hosterías.
+4. **`AccommodationImage` (`Foto de Alojamiento`):** Galería de imágenes alojadas en Cloudinary CDN. Relación **`N:1`** con `Accommodation`.
+5. **`Attraction` (`Atractivo Turístico / Paseo`):** Circuitos y paseos clasificados por categorías serranas (`HILL`, `RIVER_BEACH`, `CULTURAL`, `NIGHT`, `NATURE_TRAIL`), nivel de dificultad, coordenadas, si requiere guía y estado operativo (`OPEN`, `WEATHER_RESTRICTED`, `CLOSED`).
+6. **`AttractionImage` (`Foto de Atractivo`):** Galería de fotos vinculadas al atractivo en Cloudinary. Relación **`N:1`** con `Attraction`.
+7. **`Booking` (`Reserva`):** Motor de reservas transaccional con prevención anti-overbooking (`checkIn < existingCheckOut && checkOut > existingCheckIn`), cálculo automático de noches y monto total, código único (`CAP-YYYY-XXXX`) y máquina de estados (`PENDING`, `CONFIRMED`, `CANCELLED`, `COMPLETED`).
+8. **`Alert` (`Alerta de Seguridad`):** Avisos de Defensa Civil / Bomberos con niveles de severidad (`INFO`, `WARNING`, `DANGER`) y fecha de caducidad.
+9. **`Event` (`Evento Cultural`):** Agenda de festividades (Festival del Alienígena, Astroturismo, Ferias) con fechas, horarios, ubicación física y precio.
+10. **`InvitationToken` (`Token de Invitación`):** Mecanismo de onboarding seguro para prestadores con caducidad a los 7 días y consumo atómico en un único uso.
 
 ---
 
@@ -57,10 +61,10 @@ El modelo de datos implementa identificación descentralizada mediante **`UUID`*
 * **Seguridad:** Spring Security 6 + JJWT (JSON Web Token) Stateless.
 * **Persistencia & ORM:** Hibernate ORM / Spring Data JPA.
 * **Base de Datos:** PostgreSQL 18 (`org.postgresql:postgresql`).
+* **Almacenamiento Multimedia:** Cloudinary Java SDK (auto-compresión WebP, CDN global).
 * **Documentación Interactiva:** Springdoc OpenAPI / Swagger UI 2.8.5.
 * **Productividad:** Project Lombok.
 * **Gestor de Construcción:** Apache Maven (`mvnw`).
-* **Modelado & Herramientas:** Draw.io (UML), DBeaver / pgAdmin.
 
 ---
 
@@ -68,80 +72,105 @@ El modelo de datos implementa identificación descentralizada mediante **`UUID`*
 
 ```text
 src/main/java/com/upc/demo/
-├── config/             # Seguridad Spring Security, JWT Filter, OpenAPI, CORS y Logger
-│   ├── exception/      # GlobalExceptionHandler y excepciones de negocio semánticas
+├── config/             # Seguridad Spring Security, JWT Filter, OpenAPI, CORS y StorageConfig
+│   ├── exception/      # GlobalExceptionHandler y excepciones semánticas (BadRequest, Conflict, Forbidden)
+│   └── DataInitializer.java # Seeding automático de datos de prueba
 ├── controlador/        # Controladores REST (/api/v1/*)
 │   ├── AccommodationController.java
+│   ├── AlertController.java
 │   ├── AttractionController.java
 │   ├── AuthController.java
 │   ├── BookingController.java
+│   ├── EventController.java
 │   ├── InvitationsController.java
+│   ├── MediaController.java
 │   └── UsersController.java
 ├── dto/                # Data Transfer Objects agrupados por módulo y validados con Jakarta
-│   ├── accommodation/
-│   ├── attraction/
-│   ├── auth/
-│   ├── booking/
-│   ├── common/
-│   ├── invitation/
-│   └── user/
 ├── entidad/            # Entidades JPA del dominio y tipos enumerados
-│   ├── enums/          # Role, AccommodationType, AttractionCategory, BookingStatus
+│   ├── enums/          # Role, AccommodationType, AttractionCategory, BookingStatus, AlertSeverity
 │   ├── Accommodation.java
 │   ├── AccommodationImage.java
+│   ├── Alert.java
 │   ├── Attraction.java
-│   ├── AttractionImage.java
 │   ├── Booking.java
+│   ├── Event.java
 │   ├── InvitationToken.java
+│   ├── RatePlan.java
+│   ├── RoomType.java
 │   └── User.java
 ├── repositorio/        # Interfaces Spring Data JPA con consultas JPQL especializadas
-│   ├── AccommodationImageRepository.java
-│   ├── AccommodationRepository.java
-│   ├── AttractionImageRepository.java
-│   ├── AttractionRepository.java
-│   ├── BookingRepository.java
-│   ├── InvitationTokenRepository.java
-│   └── UserRepository.java
 └── servicio/           # Servicios transaccionales y lógica de negocio
+    ├── storage/        # Adaptador StorageService (Cloudinary / Local)
     ├── AccommodationService.java
+    ├── AlertService.java
     ├── AttractionService.java
     ├── AuthService.java
     ├── BookingService.java
+    ├── EventService.java
     ├── InvitationService.java
     └── UserService.java
 ```
 
 ---
 
-## Documentación de la API (Swagger UI)
+## Puesta en Marcha Local
 
-Al levantar el servidor backend (`./mvnw spring-boot:run`), los enlaces interactivos se imprimen automáticamente en la terminal:
+### 1. Variables de Entorno (`.env`)
+Crear un archivo `.env` en la raíz de este repositorio:
+
+```ini
+DB_URL=jdbc:postgresql://localhost:5432/portal_turismo
+DB_USERNAME=postgres
+DB_PASSWORD=root
+
+# Seguridad JWT (Obligatorio - mínimo 32 caracteres / 256 bits)
+JWT_SECRET=tu_clave_secreta_jwt_de_al_menos_32_caracteres_o_hash_256_bits
+
+# Almacenamiento Cloudinary Activo
+STORAGE_PROVIDER=cloudinary
+CLOUDINARY_URL=cloudinary://476644815221196:x099anE0a2euhAxBy5mxP8yF3Sc@wgmfpnwz
+CLOUDINARY_CLOUD_NAME=wgmfpnwz
+CLOUDINARY_API_KEY=476644815221196
+CLOUDINARY_API_SECRET=x099anE0a2euhAxBy5mxP8yF3Sc
+```
+
+### 2. Ejecutar la Aplicación
+```powershell
+# Opción recomendada (carga automáticamente el .env local)
+.\dev.ps1
+
+# O mediante Maven Wrapper directo:
+.\mvnw.cmd spring-boot:run
+```
 
 * **Swagger UI interactivo:**  
-  👉 [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) *(o `http://localhost:8080/swagger-ui/index.html`)*
+  👉 [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 * **Especificación OpenAPI en JSON:**  
   👉 [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
-
-> **Nota:** La interfaz cuenta con botón `Authorize` para ingresar tokens JWT (`Bearer <token>`) y probar endpoints protegidos de anfitriones y administradores.
 
 ---
 
 ## Credenciales de Acceso Oficial y Seeding (`DataInitializer`)
 
-Al iniciar la aplicación (`./mvnw spring-boot:run`), el componente `DataInitializer` verifica y puebla automáticamente en la base de datos PostgreSQL los usuarios base con contraseñas cifradas en BCrypt:
+Al iniciar la aplicación, `DataInitializer` verifica y puebla automáticamente en PostgreSQL las cuentas de prueba:
 
 | Rol | Correo Electrónico | Contraseña | Perfil Inicial | Propósito / Permisos |
 | :--- | :--- | :--- | :--- | :--- |
-| **`ADMIN`** | `admin@capilladelmonte.gov.ar` | `AdminCapilla2026!` | Comisión Oficial Turismo Capilla | Acceso total: gestión de prestadores, tokens de invitación, agenda cultural, auditoría y temporadas. |
-| **`HOST`** | `host@capilladelmonte.gov.ar` | `HostCapilla2026!` | Roberto Gómez (*Cabañas Pircas del Uritorco*) | Prestador adherido: administración de su complejo asignado, fotos, tarifas y confirmación de reservas. |
+| **`ADMIN`** | `admin@capilladelmonte.gov.ar` | `AdminCapilla2026!` | Comisión Oficial Turismo Capilla | Acceso total: prestadores, suspensión, tokens, agenda cultural, alertas y temporadas. |
+| **`HOST` (Cabaña)** | `host@capilladelmonte.gov.ar` | `HostCapilla2026!` | Roberto Gómez (*Cabañas Pircas del Uritorco*) | Cabaña individual al pie del cerro ($85.000/noche, seña 50%). |
+| **`HOST` (Hostería)** | `marcela.rossi@capillaturismo.com.ar` | `HostCapilla2026!` | Marcela Rossi (*Hostería Los Nogales*) | Inventario multi-unidad (habitaciones Standard, Superior y Suite, seña 30%). |
+| **`HOST` (Refugio)** | `carlos.benitez@capillaturismo.com.ar` | `HostCapilla2026!` | Carlos Benítez (*Refugio Los Alazanes*) | Monoambiente de montaña con deck privado ($65.000/noche, seña 40%). |
 
-> **Nota para Swagger UI y Postman:** Para autenticarse contra la API, enviar una petición `POST /api/v1/auth/login` con cualquiera de estas credenciales para obtener el token Bearer JWT.
+> [!TIP]
+> Para el catálogo completo de cuentas, paseos, alertas, eventos y datos bancarios, consultá el archivo centralizado [`docs/test-credentials.md`](../Turismo-Capilla/docs/test-credentials.md). Para la guía interactiva, revisá el [`Manual de Usuario Oficial`](../Turismo-Capilla/docs/user-manual.md).
 
 ---
 
 ## 📚 Documentación y Recursos
 
-- **Wiki del repositorio:** Detalla los aspectos del marco PMI, arquitectura de backend, actas y planificación técnica.
+- **Manual de Usuario Oficial:** [docs/user-manual.md](../Turismo-Capilla/docs/user-manual.md)
+- **Credenciales y Datos de Prueba:** [docs/test-credentials.md](../Turismo-Capilla/docs/test-credentials.md)
+- **Referencia Oficial de Endpoints:** [docs/api-reference.md](../Turismo-Capilla/docs/api-reference.md)
 - **Google Drive:** Almacena la documentación general del proyecto.  
   [Acceder a la carpeta del proyecto en Google Drive](https://drive.google.com/drive/u/1/folders/1KQLWydgsWH7hCD0RqfqIrFO5AzJRqB5E)
 
@@ -149,10 +178,6 @@ Al iniciar la aplicación (`./mvnw spring-boot:run`), el componente `DataInitial
 
 ## Equipo
 
-Proyecto desarrollado por:
-
-| Integrante              |
-| ----------------------- |
-| **Tiago Nicolitsis**    |
-| **Martino Costigliolo** |
-| **Juan Larcher**        |
+* **Tiago Nicolitsis**
+* **Martino Costigliolo**
+* **Juan Larcher**

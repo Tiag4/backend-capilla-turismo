@@ -2,8 +2,10 @@ package com.upc.demo.config;
 
 import com.upc.demo.entidad.enums.Role;
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.io.Decoders;
+
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -16,16 +18,26 @@ import java.util.UUID;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret:9a6747f3b64c61d4a607645061ce7212513a94f55393b2cef440355125a4e921}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
     @Value("${jwt.expiration:86400000}")
     private long jwtExpirationInMs;
 
+    @PostConstruct
+    public void validateJwtSecret() {
+        if (jwtSecret == null || jwtSecret.trim().isEmpty()) {
+            throw new IllegalStateException("JWT_SECRET no esta configurado. Es obligatorio definirlo mediante variables de entorno.");
+        }
+        if (jwtSecret.trim().length() < 32) {
+            throw new IllegalStateException("JWT_SECRET no cumple con la entropia minima de seguridad (requiere al menos 32 caracteres / 256 bits).");
+        }
+    }
+
     private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(
-                java.util.Base64.getEncoder().encodeToString(jwtSecret.getBytes())
-        );
+        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+
+
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
