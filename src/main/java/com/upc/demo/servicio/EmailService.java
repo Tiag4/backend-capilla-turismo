@@ -177,6 +177,64 @@ public class EmailService {
                 + "<td style=\"padding:8px 0;text-align:right;font-weight:700;color:#22201e;\">" + value + "</td></tr>";
     }
 
+    public boolean sendPasswordResetOtp(String recipient, String userName, String code) {
+        if (recipient == null || recipient.isBlank()) {
+            return false;
+        }
+
+        if (!isEnabled()) {
+            log.info("Correo deshabilitado. Código de recuperación OTP para {} ({}): {}", recipient, userName, code);
+            return false;
+        }
+
+        try {
+            JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
+            helper.setFrom(new InternetAddress(fromAddress, fromName, StandardCharsets.UTF_8.name()));
+            helper.setTo(recipient);
+            helper.setSubject("Código de recuperación de contraseña: " + code);
+            helper.setText(buildResetPasswordHtml(userName, code), true);
+            mailSender.send(message);
+            log.info("Código OTP de recuperación enviado a {}", recipient);
+            return true;
+        } catch (MailException | jakarta.mail.MessagingException | java.io.UnsupportedEncodingException exception) {
+            log.error("No se pudo enviar el código OTP a {}: {}", recipient, exception.getMessage());
+            return false;
+        }
+    }
+
+    private String buildResetPasswordHtml(String userName, String code) {
+        String safeName = escapeHtml(userName != null && !userName.isBlank() ? userName : "Usuario");
+        String safeCode = escapeHtml(code);
+
+        return "<!doctype html>"
+                + "<html lang=\"es\"><head><meta charset=\"utf-8\">"
+                + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+                + "<title>Recuperación de contraseña</title></head>"
+                + "<body style=\"margin:0;padding:0;background:#f4f0e8;font-family:Arial,Helvetica,sans-serif;color:#22201e;\">"
+                + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"background:#f4f0e8;padding:24px 12px;\">"
+                + "<tr><td align=\"center\">"
+                + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:540px;background:#ffffff;border:1px solid #ded8cb;border-radius:18px;overflow:hidden;\">"
+                + "<tr><td style=\"background:#e06d39;padding:22px 28px;\">"
+                + "<span style=\"display:block;color:#ffffff;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;\">Turismo Capilla del Monte</span>"
+                + "<span style=\"display:block;color:#ffffff;font-size:22px;font-weight:800;margin-top:6px;\">Recuperación de Contraseña</span>"
+                + "</td></tr>"
+                + "<tr><td style=\"padding:28px;\">"
+                + "<p style=\"margin:0 0 16px;font-size:15px;line-height:1.5;\">Hola <strong>" + safeName + "</strong>,</p>"
+                + "<p style=\"margin:0 0 20px;font-size:14px;color:#555;line-height:1.5;\">Recibimos una solicitud para restablecer la contraseña de tu cuenta. Ingresá el siguiente código de 6 dígitos en la pantalla de recuperación:</p>"
+                + "<div style=\"background:#faf8f5;border:2px dashed #e06d39;border-radius:12px;padding:16px;text-align:center;margin:24px 0;\">"
+                + "<span style=\"font-size:32px;font-weight:800;letter-spacing:8px;color:#e06d39;font-family:monospace;\">" + safeCode + "</span>"
+                + "</div>"
+                + "<p style=\"margin:0 0 8px;font-size:13px;color:#777;\">⏰ Este código tiene una validez de <strong>15 minutos</strong> y vencerá automáticamente tras 5 intentos fallidos.</p>"
+                + "<p style=\"margin:0;font-size:13px;color:#999;\">Si no solicitaste este cambio, podés ignorar este correo; tu cuenta permanece segura.</p>"
+                + "</td></tr>"
+                + "<tr><td style=\"background:#faf8f5;padding:16px 28px;text-align:center;border-top:1px solid #eee;font-size:12px;color:#888;\">"
+                + "Secretaría y Comisión de Turismo de Capilla del Monte, Córdoba"
+                + "</td></tr>"
+                + "</table></td></tr></table></body></html>";
+    }
+
     private String buildVoucherUrl(Booking booking) {
         String baseUrl = portalBaseUrl.replaceAll("/+$", "");
         return baseUrl + "/reservas/consulta?code=" + encode(booking.getBookingCode())

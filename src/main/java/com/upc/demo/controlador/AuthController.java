@@ -2,13 +2,7 @@ package com.upc.demo.controlador;
 
 import com.upc.demo.config.UserPrincipal;
 import com.upc.demo.config.exception.UnauthorizedException;
-import com.upc.demo.dto.auth.AuthResponseDto;
-import com.upc.demo.dto.auth.ChangePasswordDto;
-import com.upc.demo.dto.auth.LoginRequestDto;
-import com.upc.demo.dto.auth.RegisterHostDto;
-import com.upc.demo.dto.auth.RegisterTouristDto;
-import com.upc.demo.dto.auth.UpdateProfileDto;
-import com.upc.demo.dto.auth.UserProfileDto;
+import com.upc.demo.dto.auth.*;
 import com.upc.demo.dto.common.MessageResponseDto;
 import com.upc.demo.servicio.AuthService;
 import jakarta.validation.Valid;
@@ -66,5 +60,15 @@ public class AuthController {
             throw new UnauthorizedException("Debes estar autenticado para cambiar tu contraseña");
         }
         return ResponseEntity.ok(authService.changePassword(principal.getId(), dto));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<MessageResponseDto> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDto dto) {
+        return ResponseEntity.ok(authService.sendPasswordResetOtp(dto));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<MessageResponseDto> resetPassword(@Valid @RequestBody ResetPasswordRequestDto dto) {
+        return ResponseEntity.ok(authService.resetPasswordWithOtp(dto));
     }
 }

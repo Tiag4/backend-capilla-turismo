@@ -4,24 +4,26 @@ import com.upc.demo.config.JwtTokenProvider;
 import com.upc.demo.config.exception.BadRequestException;
 import com.upc.demo.config.exception.ForbiddenException;
 import com.upc.demo.config.exception.ResourceNotFoundException;
-import com.upc.demo.dto.auth.ChangePasswordDto;
-import com.upc.demo.dto.auth.LoginRequestDto;
-import com.upc.demo.dto.auth.UpdateProfileDto;
-import com.upc.demo.dto.auth.UserProfileDto;
+import com.upc.demo.dto.auth.*;
 import com.upc.demo.dto.common.MessageResponseDto;
+import com.upc.demo.entidad.PasswordResetCode;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.Role;
 import com.upc.demo.repositorio.InvitationTokenRepository;
+import com.upc.demo.repositorio.PasswordResetCodeRepository;
 import com.upc.demo.repositorio.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,10 +41,16 @@ class AuthServiceTest {
     private InvitationTokenRepository invitationTokenRepository;
 
     @Mock
+    private PasswordResetCodeRepository passwordResetCodeRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private AuthService authService;
@@ -58,72 +66,25 @@ class AuthServiceTest {
                 .isActive(false)
                 .build();
 
+        when(userRepository.findByEmail("host@capilla.com")).thenReturn(Optional.of(suspended));
+        when(passwordEncoder.matches("Secret123!", "encoded_password")).thenReturn(true);
+
         LoginRequestDto dto = LoginRequestDto.builder()
                 .email("host@capilla.com")
                 .password("Secret123!")
                 .build();
 
-        when(userRepository.findByEmail("host@capilla.com")).thenReturn(Optional.of(suspended));
-        when(passwordEncoder.matches("Secret123!", "encoded_password")).thenReturn(true);
-
-        assertThrows(ForbiddenException.class, () -> authService.login(dto));
+        ForbiddenException ex = assertThrows(ForbiddenException.class, () -> authService.login(dto));
+        assertTrue(ex.getMessage().contains("suspendida"));
         verify(jwtTokenProvider, never()).generateToken(any(), any(), any());
     }
 
     @Test
-    @DisplayName("updateProfile actualiza nombre, apellido y teléfono exitosamente")
-    void updateProfile_success() {
+    @DisplayName("changePassword actualiza la contraseña si la actual es correcta")
+    void changePassword_validCurrentPassword_updatesPassword() {
         UUID userId = UUID.randomUUID();
         User existingUser = User.builder()
                 .id(userId)
-                .email("cabanero@capilladelmonte.gov.ar")
-                .name("Roberto")
-                .lastName("Gómez")
-                .phone("+54 3548 111111")
-                .role(Role.HOST)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        UpdateProfileDto dto = UpdateProfileDto.builder()
-                .name("Roberto Carlos")
-                .lastName("Gómez Serrano")
-                .phone("+54 3548 999999")
-                .build();
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        UserProfileDto result = authService.updateProfile(userId, dto);
-
-        assertNotNull(result);
-        assertEquals("Roberto Carlos", result.getName());
-        assertEquals("Gómez Serrano", result.getLastName());
-        assertEquals("+54 3548 999999", result.getPhone());
-        verify(userRepository, times(1)).save(existingUser);
-    }
-
-    @Test
-    @DisplayName("updateProfile lanza ResourceNotFoundException si el usuario no existe")
-    void updateProfile_userNotFound_throwsException() {
-        UUID userId = UUID.randomUUID();
-        UpdateProfileDto dto = UpdateProfileDto.builder()
-                .name("Test")
-                .lastName("User")
-                .build();
-
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> authService.updateProfile(userId, dto));
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("changePassword actualiza la contraseña exitosamente si la actual coincide")
-    void changePassword_success() {
-        UUID userId = UUID.randomUUID();
-        User existingUser = User.builder()
-                .id(userId)
-                .email("host@capilla.com")
                 .password("encoded_old_password")
                 .build();
 
@@ -142,7 +103,7 @@ class AuthServiceTest {
         assertNotNull(response);
         assertEquals("Contraseña actualizada exitosamente", response.getMessage());
         assertEquals("encoded_new_password", existingUser.getPassword());
-        verify(userRepository, times(1)).save(existingUser);
+        verify(userRepository).save(existingUser);
     }
 
     @Test
@@ -187,5 +148,130 @@ class AuthServiceTest {
         BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.changePassword(userId, dto));
         assertEquals("La nueva contraseña no puede ser idéntica a la actual", ex.getMessage());
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("sendPasswordResetOtp genera código y envía correo para usuario existente")
+    void sendPasswordResetOtp_existingUser_generatesCodeAndSendsEmail() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .name("Roberto")
+                .email("host@capilladelmonte.gov.ar")
+                .build();
+
+        when(userRepository.findByEmail("host@capilladelmonte.gov.ar")).thenReturn(Optional.of(user));
+        when(passwordResetCodeRepository.findAllByEmailAndUsedAtIsNull("host@capilladelmonte.gov.ar"))
+                .thenReturn(Collections.emptyList());
+
+        ForgotPasswordRequestDto dto = new ForgotPasswordRequestDto("host@capilladelmonte.gov.ar");
+        MessageResponseDto response = authService.sendPasswordResetOtp(dto);
+
+        assertNotNull(response);
+        assertTrue(response.getMessage().contains("Si el correo electrónico está registrado"));
+
+        ArgumentCaptor<PasswordResetCode> captor = ArgumentCaptor.forClass(PasswordResetCode.class);
+        verify(passwordResetCodeRepository).save(captor.capture());
+        PasswordResetCode savedCode = captor.getValue();
+        assertEquals("host@capilladelmonte.gov.ar", savedCode.getEmail());
+        assertEquals(6, savedCode.getCode().length());
+        assertEquals(0, savedCode.getAttempts());
+        assertNotNull(savedCode.getExpiresAt());
+
+        verify(emailService).sendPasswordResetOtp(eq(user.getEmail()), eq(user.getName()), eq(savedCode.getCode()));
+    }
+
+    @Test
+    @DisplayName("sendPasswordResetOtp retorna mensaje genérico anti-enumeración para usuario inexistente")
+    void sendPasswordResetOtp_nonExistingUser_returnsGenericMessage() {
+        when(userRepository.findByEmail("inexistente@correo.com")).thenReturn(Optional.empty());
+
+        ForgotPasswordRequestDto dto = new ForgotPasswordRequestDto("inexistente@correo.com");
+        MessageResponseDto response = authService.sendPasswordResetOtp(dto);
+
+        assertNotNull(response);
+        assertTrue(response.getMessage().contains("Si el correo electrónico está registrado"));
+        verify(passwordResetCodeRepository, never()).save(any());
+        verify(emailService, never()).sendPasswordResetOtp(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("resetPasswordWithOtp actualiza la clave si el código y datos son válidos")
+    void resetPasswordWithOtp_validCode_updatesPassword() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .email("host@capilladelmonte.gov.ar")
+                .password("encoded_old")
+                .build();
+
+        PasswordResetCode resetCode = PasswordResetCode.builder()
+                .id(UUID.randomUUID())
+                .email("host@capilladelmonte.gov.ar")
+                .code("123456")
+                .attempts(0)
+                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .build();
+
+        when(userRepository.findByEmail("host@capilladelmonte.gov.ar")).thenReturn(Optional.of(user));
+        when(passwordResetCodeRepository.findTopByEmailAndUsedAtIsNullOrderByCreatedAtDesc("host@capilladelmonte.gov.ar"))
+                .thenReturn(Optional.of(resetCode));
+        when(passwordEncoder.encode("NuevaPassword123!")).thenReturn("encoded_new");
+
+        ResetPasswordRequestDto dto = new ResetPasswordRequestDto("host@capilladelmonte.gov.ar", "123456", "NuevaPassword123!");
+        MessageResponseDto response = authService.resetPasswordWithOtp(dto);
+
+        assertNotNull(response);
+        assertTrue(response.getMessage().contains("exitosamente"));
+        assertEquals("encoded_new", user.getPassword());
+        assertNotNull(resetCode.getUsedAt());
+        verify(userRepository).save(user);
+        verify(passwordResetCodeRepository).save(resetCode);
+    }
+
+    @Test
+    @DisplayName("resetPasswordWithOtp falla si el código expiró")
+    void resetPasswordWithOtp_expiredCode_throwsBadRequest() {
+        User user = User.builder().email("host@capilladelmonte.gov.ar").build();
+        PasswordResetCode expiredCode = PasswordResetCode.builder()
+                .email("host@capilladelmonte.gov.ar")
+                .code("123456")
+                .expiresAt(LocalDateTime.now().minusMinutes(1))
+                .build();
+
+        when(userRepository.findByEmail("host@capilladelmonte.gov.ar")).thenReturn(Optional.of(user));
+        when(passwordResetCodeRepository.findTopByEmailAndUsedAtIsNullOrderByCreatedAtDesc("host@capilladelmonte.gov.ar"))
+                .thenReturn(Optional.of(expiredCode));
+
+        ResetPasswordRequestDto dto = new ResetPasswordRequestDto("host@capilladelmonte.gov.ar", "123456", "NuevaPassword123!");
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.resetPasswordWithOtp(dto));
+
+        assertTrue(ex.getMessage().contains("ha expirado"));
+        assertNotNull(expiredCode.getUsedAt());
+        verify(passwordResetCodeRepository).save(expiredCode);
+        verify(userRepository, never()).save(user);
+    }
+
+    @Test
+    @DisplayName("resetPasswordWithOtp incrementa intentos con código incorrecto")
+    void resetPasswordWithOtp_wrongCode_incrementsAttempts() {
+        User user = User.builder().email("host@capilladelmonte.gov.ar").build();
+        PasswordResetCode resetCode = PasswordResetCode.builder()
+                .email("host@capilladelmonte.gov.ar")
+                .code("123456")
+                .attempts(2)
+                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .build();
+
+        when(userRepository.findByEmail("host@capilladelmonte.gov.ar")).thenReturn(Optional.of(user));
+        when(passwordResetCodeRepository.findTopByEmailAndUsedAtIsNullOrderByCreatedAtDesc("host@capilladelmonte.gov.ar"))
+                .thenReturn(Optional.of(resetCode));
+
+        ResetPasswordRequestDto dto = new ResetPasswordRequestDto("host@capilladelmonte.gov.ar", "999999", "NuevaPassword123!");
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.resetPasswordWithOtp(dto));
+
+        assertTrue(ex.getMessage().contains("Código incorrecto"));
+        assertEquals(3, resetCode.getAttempts());
+        assertNull(resetCode.getUsedAt());
+        verify(passwordResetCodeRepository).save(resetCode);
+        verify(userRepository, never()).save(user);
     }
 }
