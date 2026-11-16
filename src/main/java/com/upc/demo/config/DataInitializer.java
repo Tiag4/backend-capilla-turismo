@@ -16,6 +16,7 @@ import com.upc.demo.entidad.TourismSeason;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.SeasonType;
 import com.upc.demo.entidad.enums.AccommodationType;
+import com.upc.demo.entidad.enums.ImageModerationStatus;
 import com.upc.demo.entidad.enums.AlertSeverity;
 import com.upc.demo.entidad.enums.AttractionCategory;
 import com.upc.demo.entidad.enums.AttractionStatus;
@@ -174,6 +175,7 @@ public class DataInitializer implements CommandLineRunner {
             aguaribay.getImages().add(AccommodationImage.builder()
                     .url(aguaribayImgs.get(i))
                     .isMain(i == 0)
+                    .status(ImageModerationStatus.APPROVED)
                     .accommodation(aguaribay)
                     .build());
         }
@@ -247,6 +249,7 @@ public class DataInitializer implements CommandLineRunner {
             alpa.getImages().add(AccommodationImage.builder()
                     .url(alpaImgs.get(i))
                     .isMain(i == 0)
+                    .status(ImageModerationStatus.APPROVED)
                     .accommodation(alpa)
                     .build());
         }
@@ -319,6 +322,7 @@ public class DataInitializer implements CommandLineRunner {
             adrianita.getImages().add(AccommodationImage.builder()
                     .url(adrianitaImgs.get(i))
                     .isMain(i == 0)
+                    .status(ImageModerationStatus.APPROVED)
                     .accommodation(adrianita)
                     .build());
         }
@@ -393,6 +397,7 @@ public class DataInitializer implements CommandLineRunner {
             atalaya.getImages().add(AccommodationImage.builder()
                     .url(atalayaImgs.get(i))
                     .isMain(i == 0)
+                    .status(ImageModerationStatus.APPROVED)
                     .accommodation(atalaya)
                     .build());
         }
@@ -470,6 +475,7 @@ public class DataInitializer implements CommandLineRunner {
             casablanca.getImages().add(AccommodationImage.builder()
                     .url(casablancaImgs.get(i))
                     .isMain(i == 0)
+                    .status(ImageModerationStatus.APPROVED)
                     .accommodation(casablanca)
                     .build());
         }

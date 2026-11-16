@@ -3,6 +3,7 @@ package com.upc.demo.dto.accommodation;
 import com.upc.demo.dto.auth.UserProfileDto;
 import com.upc.demo.entidad.Accommodation;
 import com.upc.demo.entidad.enums.AccommodationType;
+import com.upc.demo.entidad.enums.ImageModerationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -64,12 +65,17 @@ public class AccommodationResponseDto {
     private List<AccommodationImageDto> images = new ArrayList<>();
 
     public static AccommodationResponseDto fromEntity(Accommodation entity) {
+        return fromEntity(entity, false);
+    }
+
+    public static AccommodationResponseDto fromEntity(Accommodation entity, boolean onlyApprovedImages) {
         if (entity == null) {
             return null;
         }
 
         List<AccommodationImageDto> imageDtos = entity.getImages() != null
                 ? entity.getImages().stream()
+                .filter(img -> !onlyApprovedImages || img.getStatus() == null || img.getStatus() == ImageModerationStatus.APPROVED)
                 .map(AccommodationImageDto::fromEntity)
                 .collect(Collectors.toList())
                 : new ArrayList<>();
