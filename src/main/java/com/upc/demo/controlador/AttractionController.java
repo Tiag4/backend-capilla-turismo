@@ -52,6 +52,12 @@ public class AttractionController {
         return ResponseEntity.ok(attractionService.update(id, dto));
     }
 
+    @PatchMapping("/{id}/featured")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AttractionResponseDto> toggleFeatured(@PathVariable UUID id) {
+        return ResponseEntity.ok(attractionService.toggleFeatured(id));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteAttraction(@PathVariable UUID id) {

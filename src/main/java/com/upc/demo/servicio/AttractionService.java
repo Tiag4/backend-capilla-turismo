@@ -198,6 +198,14 @@ public class AttractionService {
     }
 
     @Transactional
+    public AttractionResponseDto toggleFeatured(UUID id) {
+        Attraction attraction = findAttractionById(id);
+        attraction.setIsFeatured(!Boolean.TRUE.equals(attraction.getIsFeatured()));
+        Attraction updated = attractionRepository.save(attraction);
+        return AttractionResponseDto.fromEntity(updated);
+    }
+
+    @Transactional
     public void delete(UUID id) {
         Attraction attraction = findAttractionById(id);
 
