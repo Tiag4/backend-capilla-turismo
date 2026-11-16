@@ -57,6 +57,27 @@ public class CreateAttractionDto {
     @Builder.Default
     private Boolean isFeatured = false;
 
+    // Ficha Técnica de Montaña y Telemetría
+    private Integer elevationGainMeters;
+    private Integer maxElevationMsnm;
+    private Double distanceKm;
+    private String trailType;
+    private String terrainType;
+
+    // Protocolos de Seguridad y Horarios
+    private String openingHours;
+    private String cutoffTime;
+    private String hydrationRequirement;
+
+    @Builder.Default
+    private List<String> highlights = new ArrayList<>();
+
+    @Builder.Default
+    private List<String> recommendedGear = new ArrayList<>();
+
+    @Builder.Default
+    private List<String> safetyWarnings = new ArrayList<>();
+
     @Valid
     @Builder.Default
     private List<AttractionImageDto> images = new ArrayList<>();

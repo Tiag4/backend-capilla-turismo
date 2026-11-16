@@ -1,6 +1,5 @@
 package com.upc.demo.servicio;
 
-import com.upc.demo.config.exception.ResourceNotFoundException;
 import com.upc.demo.dto.attraction.AttractionImageDto;
 import com.upc.demo.dto.attraction.AttractionResponseDto;
 import com.upc.demo.dto.attraction.CreateAttractionDto;
@@ -8,16 +7,18 @@ import com.upc.demo.dto.attraction.UpdateAttractionDto;
 import com.upc.demo.entidad.Attraction;
 import com.upc.demo.entidad.AttractionImage;
 import com.upc.demo.entidad.enums.AttractionCategory;
+import com.upc.demo.entidad.enums.AttractionStatus;
+import com.upc.demo.config.exception.ResourceNotFoundException;
 import com.upc.demo.repositorio.AttractionImageRepository;
 import com.upc.demo.repositorio.AttractionRepository;
 import com.upc.demo.servicio.storage.StorageService;
-import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -37,33 +38,29 @@ public class AttractionService {
                                              String difficulty,
                                              Boolean requiresGuide,
                                              String search) {
-        Specification<Attraction> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
+        Specification<Attraction> spec = (root, query, cb) -> cb.conjunction();
 
-            if (category != null) {
-                predicates.add(cb.equal(root.get("category"), category));
-            }
+        if (category != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("category"), category));
+        }
 
-            if (difficulty != null && !difficulty.isBlank()) {
-                predicates.add(cb.equal(cb.lower(root.get("difficulty")), difficulty.toLowerCase().trim()));
-            }
+        if (difficulty != null && !difficulty.isBlank()) {
+            spec = spec.and((root, query, cb) -> cb.equal(cb.upper(root.get("difficulty")), difficulty.toUpperCase().trim()));
+        }
 
-            if (requiresGuide != null) {
-                predicates.add(cb.equal(root.get("requiresGuide"), requiresGuide));
-            }
+        if (requiresGuide != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("requiresGuide"), requiresGuide));
+        }
 
-            if (search != null && !search.isBlank()) {
-                String pattern = "%" + search.toLowerCase().trim() + "%";
-                Predicate nameMatch = cb.like(cb.lower(root.get("name")), pattern);
-                Predicate descMatch = cb.like(cb.lower(root.get("description")), pattern);
-                predicates.add(cb.or(nameMatch, descMatch));
-            }
+        if (search != null && !search.isBlank()) {
+            String pattern = "%" + search.toLowerCase().trim() + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("name")), pattern),
+                    cb.like(cb.lower(root.get("description")), pattern)
+            ));
+        }
 
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
-
-        return attractionRepository.findAll(spec)
-                .stream()
+        return attractionRepository.findAll(spec).stream()
                 .map(AttractionResponseDto::fromEntity)
                 .collect(Collectors.toList());
     }
@@ -90,6 +87,17 @@ public class AttractionService {
                 .status(dto.getStatus() != null ? dto.getStatus() : com.upc.demo.entidad.enums.AttractionStatus.OPEN)
                 .statusNotice(dto.getStatusNotice())
                 .isFeatured(dto.getIsFeatured() != null ? dto.getIsFeatured() : false)
+                .elevationGainMeters(dto.getElevationGainMeters())
+                .maxElevationMsnm(dto.getMaxElevationMsnm())
+                .distanceKm(dto.getDistanceKm())
+                .trailType(dto.getTrailType())
+                .terrainType(dto.getTerrainType())
+                .openingHours(dto.getOpeningHours())
+                .cutoffTime(dto.getCutoffTime())
+                .hydrationRequirement(dto.getHydrationRequirement())
+                .highlights(dto.getHighlights() != null ? new ArrayList<>(dto.getHighlights()) : new ArrayList<>())
+                .recommendedGear(dto.getRecommendedGear() != null ? new ArrayList<>(dto.getRecommendedGear()) : new ArrayList<>())
+                .safetyWarnings(dto.getSafetyWarnings() != null ? new ArrayList<>(dto.getSafetyWarnings()) : new ArrayList<>())
                 .images(new ArrayList<>())
                 .build();
 
@@ -150,6 +158,39 @@ public class AttractionService {
         }
         if (dto.getIsFeatured() != null) {
             attraction.setIsFeatured(dto.getIsFeatured());
+        }
+        if (dto.getElevationGainMeters() != null) {
+            attraction.setElevationGainMeters(dto.getElevationGainMeters());
+        }
+        if (dto.getMaxElevationMsnm() != null) {
+            attraction.setMaxElevationMsnm(dto.getMaxElevationMsnm());
+        }
+        if (dto.getDistanceKm() != null) {
+            attraction.setDistanceKm(dto.getDistanceKm());
+        }
+        if (dto.getTrailType() != null) {
+            attraction.setTrailType(dto.getTrailType());
+        }
+        if (dto.getTerrainType() != null) {
+            attraction.setTerrainType(dto.getTerrainType());
+        }
+        if (dto.getOpeningHours() != null) {
+            attraction.setOpeningHours(dto.getOpeningHours());
+        }
+        if (dto.getCutoffTime() != null) {
+            attraction.setCutoffTime(dto.getCutoffTime());
+        }
+        if (dto.getHydrationRequirement() != null) {
+            attraction.setHydrationRequirement(dto.getHydrationRequirement());
+        }
+        if (dto.getHighlights() != null) {
+            attraction.setHighlights(new ArrayList<>(dto.getHighlights()));
+        }
+        if (dto.getRecommendedGear() != null) {
+            attraction.setRecommendedGear(new ArrayList<>(dto.getRecommendedGear()));
+        }
+        if (dto.getSafetyWarnings() != null) {
+            attraction.setSafetyWarnings(new ArrayList<>(dto.getSafetyWarnings()));
         }
 
         Attraction updated = attractionRepository.save(attraction);

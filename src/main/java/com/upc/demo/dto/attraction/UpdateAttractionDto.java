@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -46,4 +47,20 @@ public class UpdateAttractionDto {
     private String statusNotice;
 
     private Boolean isFeatured;
+
+    // Ficha Técnica de Montaña y Telemetría
+    private Integer elevationGainMeters;
+    private Integer maxElevationMsnm;
+    private Double distanceKm;
+    private String trailType;
+    private String terrainType;
+
+    // Protocolos de Seguridad y Horarios
+    private String openingHours;
+    private String cutoffTime;
+    private String hydrationRequirement;
+
+    private List<String> highlights;
+    private List<String> recommendedGear;
+    private List<String> safetyWarnings;
 }

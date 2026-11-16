@@ -34,6 +34,28 @@ public class AttractionResponseDto {
     private com.upc.demo.entidad.enums.AttractionStatus status;
     private String statusNotice;
     private Boolean isFeatured;
+
+    // Ficha Técnica de Montaña y Telemetría
+    private Integer elevationGainMeters;
+    private Integer maxElevationMsnm;
+    private Double distanceKm;
+    private String trailType;
+    private String terrainType;
+
+    // Protocolos de Seguridad y Horarios
+    private String openingHours;
+    private String cutoffTime;
+    private String hydrationRequirement;
+
+    @Builder.Default
+    private List<String> highlights = new ArrayList<>();
+
+    @Builder.Default
+    private List<String> recommendedGear = new ArrayList<>();
+
+    @Builder.Default
+    private List<String> safetyWarnings = new ArrayList<>();
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -66,6 +88,17 @@ public class AttractionResponseDto {
                 .status(entity.getStatus() != null ? entity.getStatus() : com.upc.demo.entidad.enums.AttractionStatus.OPEN)
                 .statusNotice(entity.getStatusNotice())
                 .isFeatured(entity.getIsFeatured() != null ? entity.getIsFeatured() : false)
+                .elevationGainMeters(entity.getElevationGainMeters())
+                .maxElevationMsnm(entity.getMaxElevationMsnm())
+                .distanceKm(entity.getDistanceKm())
+                .trailType(entity.getTrailType())
+                .terrainType(entity.getTerrainType())
+                .openingHours(entity.getOpeningHours())
+                .cutoffTime(entity.getCutoffTime())
+                .hydrationRequirement(entity.getHydrationRequirement())
+                .highlights(entity.getHighlights() != null ? new ArrayList<>(entity.getHighlights()) : new ArrayList<>())
+                .recommendedGear(entity.getRecommendedGear() != null ? new ArrayList<>(entity.getRecommendedGear()) : new ArrayList<>())
+                .safetyWarnings(entity.getSafetyWarnings() != null ? new ArrayList<>(entity.getSafetyWarnings()) : new ArrayList<>())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .images(imageDtos)

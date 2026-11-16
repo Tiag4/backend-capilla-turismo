@@ -66,6 +66,50 @@ public class Attraction {
     @Builder.Default
     private Boolean isFeatured = false;
 
+    // Ficha Técnica de Montaña y Telemetría
+    @Column(name = "elevation_gain_meters")
+    private Integer elevationGainMeters;
+
+    @Column(name = "max_elevation_msnm")
+    private Integer maxElevationMsnm;
+
+    @Column(name = "distance_km")
+    private Double distanceKm;
+
+    @Column(name = "trail_type", length = 100)
+    private String trailType;
+
+    @Column(name = "terrain_type", length = 200)
+    private String terrainType;
+
+    // Protocolos de Seguridad y Horarios
+    @Column(name = "opening_hours", length = 150)
+    private String openingHours;
+
+    @Column(name = "cutoff_time", length = 150)
+    private String cutoffTime;
+
+    @Column(name = "hydration_requirement", length = 200)
+    private String hydrationRequirement;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "attraction_highlights", joinColumns = @JoinColumn(name = "attraction_id"))
+    @Column(name = "highlight", columnDefinition = "TEXT")
+    @Builder.Default
+    private List<String> highlights = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "attraction_gear", joinColumns = @JoinColumn(name = "attraction_id"))
+    @Column(name = "gear", columnDefinition = "TEXT")
+    @Builder.Default
+    private List<String> recommendedGear = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "attraction_safety_warnings", joinColumns = @JoinColumn(name = "attraction_id"))
+    @Column(name = "warning", columnDefinition = "TEXT")
+    @Builder.Default
+    private List<String> safetyWarnings = new ArrayList<>();
+
     @OneToMany(mappedBy = "attraction", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<AttractionImage> images = new ArrayList<>();
