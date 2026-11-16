@@ -1049,6 +1049,33 @@ public class DataInitializer implements CommandLineRunner {
             bookingRepository.save(pendingReviewBooking);
             log.info("✔ Reserva completada de prueba lista para reseñar: CAP-2026-9901");
         }
+
+        // Reserva PENDIENTE para pruebas de confirmacion / rechazo desde el dashboard del anfitrion
+        if (bookingRepository.findByBookingCode("CAP-2026-8801").isEmpty()) {
+            BigDecimal nightPrice = cabin.getPricePerNight() != null ? cabin.getPricePerNight() : BigDecimal.valueOf(85000.00);
+            BigDecimal total = nightPrice.multiply(BigDecimal.valueOf(4));
+            Booking pendingBooking = Booking.builder()
+                    .bookingCode("CAP-2026-8801")
+                    .checkIn(LocalDate.now().plusDays(10))
+                    .checkOut(LocalDate.now().plusDays(14))
+                    .totalNights(4)
+                    .guestCount(3)
+                    .pricePerNight(nightPrice)
+                    .totalAmount(total)
+                    .downPaymentPercentage(50)
+                    .downPaymentAmount(total.multiply(BigDecimal.valueOf(0.5)))
+                    .remainingBalance(total.multiply(BigDecimal.valueOf(0.5)))
+                    .status(BookingStatus.PENDING)
+                    .guestName("Facundo Morales")
+                    .guestEmail("facundo.morales@example.com")
+                    .guestPhone("+54 9 11 67891234")
+                    .guestOrigin("Buenos Aires")
+                    .notes("Llegamos en micro cerca de las 15 hs.")
+                    .accommodation(cabin)
+                    .build();
+            bookingRepository.save(pendingBooking);
+            log.info("✔ Reserva PENDIENTE de prueba creada con éxito: CAP-2026-8801");
+        }
     }
 
     private void seedCompletedBookingWithReview(

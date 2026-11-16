@@ -330,14 +330,28 @@ public class BookingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada con id: " + id));
 
         // Validar autorización: Solo el anfitrión dueño del alojamiento o un administrador pueden modificar
-        UUID hostId = booking.getAccommodation().getHost().getId();
-        if (!isAdmin && (userId == null || !hostId.equals(userId))) {
+        User host = booking.getAccommodation() != null ? booking.getAccommodation().getHost() : null;
+        UUID hostId = host != null ? host.getId() : null;
+        if (!isAdmin && (userId == null || !userId.equals(hostId))) {
             throw new ForbiddenException("No tienes permisos para modificar el estado de esta reserva");
         }
 
         // Reglas de la Máquina de Estados: Si ya está CANCELLED o COMPLETED no se puede modificar
         if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.COMPLETED) {
             throw new BadRequestException("No se puede modificar una reserva finalizada o cancelada");
+        }
+
+        // Integridad transaccional: Si se va a confirmar, verificar que no exista otra confirmada solapada
+        if (newStatus == BookingStatus.CONFIRMED && booking.getAccommodation() != null) {
+            boolean solapaConfirmada = bookingRepository.existsOverlappingConfirmedBooking(
+                    booking.getAccommodation().getId(),
+                    booking.getId(),
+                    booking.getCheckIn(),
+                    booking.getCheckOut()
+            );
+            if (solapaConfirmada) {
+                throw new ConflictException("Ya existe otra reserva confirmada que se solapa con las fechas solicitadas");
+            }
         }
 
         booking.setStatus(newStatus);
