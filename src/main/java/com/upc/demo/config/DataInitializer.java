@@ -147,6 +147,7 @@ public class DataInitializer implements CommandLineRunner {
         aguaribay.setCheckInTime("14:00 hs");
         aguaribay.setCheckOutTime("10:00 hs");
         aguaribay.setPetPolicy("Mascotas medianas y pequeñas bienvenidas con aviso previo en parque.");
+        aguaribay.setIsFeatured(true);
         aguaribay.setCancellationPolicy("Cancelación flexible hasta 7 días antes de la fecha de ingreso.");
         aguaribay.setLicenseNumber("HAB-2024/089");
         aguaribay.setResponseTime("Responde habitualmente en menos de 1 hora");
@@ -222,6 +223,7 @@ public class DataInitializer implements CommandLineRunner {
         alpa.setPetPolicy("Mascotas medianas educadas permitidas previa consulta.");
         alpa.setCancellationPolicy("Cancelación flexible hasta 5 días antes de la llegada.");
         alpa.setLicenseNumber("HAB-2023/142");
+        alpa.setIsFeatured(true);
         alpa.setResponseTime("Responde habitualmente en el día");
         alpa.setHasBreakfast(false);
         alpa.setAmenities(new ArrayList<>(Arrays.asList("Piscina con solárium", "Vista al Cerro Uritorco", "Wi-Fi alta velocidad", "Asador techado", "Cochera cubierta", "Calefacción tiro balanceado")));

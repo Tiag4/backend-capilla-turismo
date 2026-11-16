@@ -59,7 +59,7 @@ public class AccommodationController {
             @Valid @RequestBody CreateAccommodationDto dto,
             @AuthenticationPrincipal UserPrincipal user) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(accommodationService.create(dto, user.getId()));
+                .body(accommodationService.create(dto, user.getId(), user.getRole() == Role.ADMIN));
     }
 
     @PutMapping("/{id}")
@@ -70,6 +70,12 @@ public class AccommodationController {
             @AuthenticationPrincipal UserPrincipal user) {
         boolean isAdmin = user.getRole() == Role.ADMIN;
         return ResponseEntity.ok(accommodationService.update(id, dto, user.getId(), isAdmin));
+    }
+
+    @PatchMapping("/{id}/featured")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AccommodationResponseDto> toggleFeatured(@PathVariable UUID id) {
+        return ResponseEntity.ok(accommodationService.toggleFeatured(id));
     }
 
     @DeleteMapping("/{id}")

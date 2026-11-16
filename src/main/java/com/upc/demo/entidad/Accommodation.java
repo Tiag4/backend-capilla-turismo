@@ -100,6 +100,10 @@ public class Accommodation {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "is_featured", nullable = false)
+    @Builder.Default
+    private Boolean isFeatured = false;
+
     @Column(name = "down_payment_percentage")
     @Builder.Default
     private Integer downPaymentPercentage = 50;

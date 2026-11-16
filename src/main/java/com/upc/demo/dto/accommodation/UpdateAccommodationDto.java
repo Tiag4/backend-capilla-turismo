@@ -96,4 +96,5 @@ public class UpdateAccommodationDto {
     private String bankName;
 
     private Boolean isActive;
+    private Boolean isFeatured;
 }

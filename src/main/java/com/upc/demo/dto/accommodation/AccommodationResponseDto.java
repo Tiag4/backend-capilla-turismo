@@ -45,6 +45,7 @@ public class AccommodationResponseDto {
     private String breakfastType;
     private List<String> amenities;
     private Boolean isActive;
+    private Boolean isFeatured;
     private Integer downPaymentPercentage;
     private String bankAccountHolder;
     private String bankCbu;
@@ -117,6 +118,7 @@ public class AccommodationResponseDto {
                 .breakfastType(entity.getBreakfastType())
                 .amenities(entity.getAmenities() != null ? new ArrayList<>(entity.getAmenities()) : new ArrayList<>())
                 .isActive(entity.getIsActive())
+                .isFeatured(entity.getIsFeatured() != null ? entity.getIsFeatured() : false)
                 .downPaymentPercentage(entity.getDownPaymentPercentage() != null ? entity.getDownPaymentPercentage() : 50)
                 .bankAccountHolder(entity.getBankAccountHolder())
                 .bankCbu(entity.getBankCbu())
