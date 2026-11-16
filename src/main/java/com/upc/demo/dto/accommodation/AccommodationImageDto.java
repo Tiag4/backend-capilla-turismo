@@ -1,6 +1,7 @@
 package com.upc.demo.dto.accommodation;
 
 import com.upc.demo.entidad.AccommodationImage;
+import com.upc.demo.entidad.enums.ImageModerationStatus;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,6 +27,12 @@ public class AccommodationImageDto {
     @Builder.Default
     private Boolean isMain = false;
 
+    private ImageModerationStatus status;
+
+    private String rejectionReason;
+
+    private LocalDateTime moderatedAt;
+
     private LocalDateTime createdAt;
 
     public static AccommodationImageDto fromEntity(AccommodationImage entity) {
@@ -37,6 +44,9 @@ public class AccommodationImageDto {
                 .url(entity.getUrl())
                 .publicId(entity.getPublicId())
                 .isMain(entity.getIsMain())
+                .status(entity.getStatus() != null ? entity.getStatus() : ImageModerationStatus.APPROVED)
+                .rejectionReason(entity.getRejectionReason())
+                .moderatedAt(entity.getModeratedAt())
                 .createdAt(entity.getCreatedAt())
                 .build();
     }

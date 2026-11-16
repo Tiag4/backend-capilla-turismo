@@ -11,6 +11,7 @@ import com.upc.demo.entidad.Accommodation;
 import com.upc.demo.entidad.AccommodationImage;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.AccommodationType;
+import com.upc.demo.entidad.enums.ImageModerationStatus;
 import com.upc.demo.repositorio.AccommodationImageRepository;
 import com.upc.demo.repositorio.AccommodationRepository;
 import com.upc.demo.repositorio.UserRepository;
@@ -96,7 +97,7 @@ public class AccommodationService {
         }
 
         return accommodations.stream()
-                .map(AccommodationResponseDto::fromEntity)
+                .map(a -> AccommodationResponseDto.fromEntity(a, true))
                 .collect(Collectors.toList());
     }
 
@@ -108,7 +109,7 @@ public class AccommodationService {
     @Transactional(readOnly = true)
     public AccommodationResponseDto getById(UUID id) {
         Accommodation accommodation = findAccommodationById(id);
-        return AccommodationResponseDto.fromEntity(accommodation);
+        return AccommodationResponseDto.fromEntity(accommodation, true);
     }
 
     @Transactional(readOnly = true)
@@ -313,6 +314,7 @@ public class AccommodationService {
                 .url(dto.getUrl().trim())
                 .publicId(dto.getPublicId())
                 .isMain(isMain)
+                .status(ImageModerationStatus.PENDING)
                 .accommodation(accommodation)
                 .build();
 
