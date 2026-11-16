@@ -34,4 +34,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         @Param("checkIn") LocalDate checkIn,
         @Param("checkOut") LocalDate checkOut
     );
+
+    @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.accommodation.id = :accommodationId " +
+           "AND b.id != :bookingId " +
+           "AND b.status = com.upc.demo.entidad.enums.BookingStatus.CONFIRMED " +
+           "AND b.checkIn < :checkOut AND b.checkOut > :checkIn")
+    boolean existsOverlappingConfirmedBooking(
+        @Param("accommodationId") UUID accommodationId,
+        @Param("bookingId") UUID bookingId,
+        @Param("checkIn") LocalDate checkIn,
+        @Param("checkOut") LocalDate checkOut
+    );
 }
