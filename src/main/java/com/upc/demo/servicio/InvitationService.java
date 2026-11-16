@@ -11,6 +11,7 @@ import com.upc.demo.entidad.User;
 import com.upc.demo.repositorio.InvitationTokenRepository;
 import com.upc.demo.repositorio.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,11 +22,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class InvitationService {
 
     private final InvitationTokenRepository invitationTokenRepository;
     private final UserRepository userRepository;
     private final AuditService auditService;
+    private final EmailService emailService;
 
     @Transactional
     public InvitationResponseDto createInvitation(CreateInvitationDto dto, UUID adminId) {
@@ -59,6 +62,12 @@ public class InvitationService {
                 saved.getId().toString(),
                 "Token con vigencia de 7 días generado para incorporación al padrón oficial."
         );
+
+        try {
+            emailService.sendInvitationEmail(saved.getEmail(), saved.getToken(), saved.getExpiresAt());
+        } catch (Exception ex) {
+            log.warn("No se pudo despachar el correo de invitación a {}: {}", saved.getEmail(), ex.getMessage());
+        }
 
         return InvitationResponseDto.fromEntity(saved);
     }
