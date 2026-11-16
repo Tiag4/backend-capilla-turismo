@@ -157,7 +157,11 @@ public class BookingService {
                 .build();
 
         Booking savedBooking = bookingRepository.save(booking);
-        emailService.sendVoucherEmails(savedBooking);
+        try {
+            emailService.sendVoucherEmails(savedBooking);
+        } catch (Exception ex) {
+            // El fallo de correo nunca debe anular la creación de la reserva
+        }
         return mapToResponseDto(savedBooking);
     }
 
@@ -306,7 +310,11 @@ public class BookingService {
         }
         bookingItemRepository.saveAll(bookingItems);
 
-        emailService.sendVoucherEmails(savedBooking);
+        try {
+            emailService.sendVoucherEmails(savedBooking);
+        } catch (Exception ex) {
+            // El fallo de correo nunca debe anular la creación de la reserva
+        }
         return mapToResponseDto(savedBooking);
     }
 
@@ -334,7 +342,11 @@ public class BookingService {
 
         booking.setStatus(newStatus);
         Booking updatedBooking = bookingRepository.save(booking);
-        emailService.sendVoucherEmails(updatedBooking);
+        try {
+            emailService.sendVoucherEmails(updatedBooking);
+        } catch (Exception ex) {
+            // El fallo de correo nunca debe anular el cambio de estado de la reserva
+        }
         return mapToResponseDto(updatedBooking);
     }
 
