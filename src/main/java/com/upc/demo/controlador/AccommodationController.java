@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -70,6 +71,17 @@ public class AccommodationController {
             @AuthenticationPrincipal UserPrincipal user) {
         boolean isAdmin = user.getRole() == Role.ADMIN;
         return ResponseEntity.ok(accommodationService.update(id, dto, user.getId(), isAdmin));
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
+    public ResponseEntity<AccommodationResponseDto> toggleStatus(
+            @PathVariable UUID id,
+            @RequestBody(required = false) Map<String, Boolean> body,
+            @AuthenticationPrincipal UserPrincipal user) {
+        boolean isAdmin = user.getRole() == Role.ADMIN;
+        Boolean explicitActive = (body != null && body.containsKey("isActive")) ? body.get("isActive") : null;
+        return ResponseEntity.ok(accommodationService.toggleStatus(id, explicitActive, user.getId(), isAdmin));
     }
 
     @DeleteMapping("/{id}")

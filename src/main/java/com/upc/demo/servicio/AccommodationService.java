@@ -277,6 +277,19 @@ public class AccommodationService {
     }
 
     @Transactional
+    public AccommodationResponseDto toggleStatus(UUID id, Boolean explicitActive, UUID hostId, boolean isAdmin) {
+        Accommodation accommodation = findAccommodationById(id);
+        validateOwnership(accommodation, hostId, isAdmin);
+
+        boolean newActive = explicitActive != null ? explicitActive : !Boolean.TRUE.equals(accommodation.getIsActive());
+        accommodation.setIsActive(newActive);
+
+        Accommodation updated = accommodationRepository.save(accommodation);
+        log.info("✔ Estado de disponibilidad del alojamiento {} ({}) cambiado a isActive={}", updated.getId(), updated.getName(), newActive);
+        return AccommodationResponseDto.fromEntity(updated);
+    }
+
+    @Transactional
     public void delete(UUID id, UUID hostId, boolean isAdmin) {
         Accommodation accommodation = findAccommodationById(id);
         validateOwnership(accommodation, hostId, isAdmin);
