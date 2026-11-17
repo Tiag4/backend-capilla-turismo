@@ -109,6 +109,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/alerts/active").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/emergency-sanitary/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/seasons/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/mobility/**").permitAll()
                         
                         // Reservas: creacion y consulta publica (lookup)
                         .requestMatchers(HttpMethod.POST, "/api/v1/bookings").permitAll()
