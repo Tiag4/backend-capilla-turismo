@@ -6,6 +6,7 @@ import com.upc.demo.entidad.Alert;
 import com.upc.demo.entidad.Attraction;
 import com.upc.demo.entidad.AttractionImage;
 import com.upc.demo.entidad.Booking;
+import com.upc.demo.entidad.BookingItem;
 import com.upc.demo.entidad.Event;
 import com.upc.demo.entidad.HealthGuardNotice;
 import com.upc.demo.entidad.Pharmacy;
@@ -180,6 +181,7 @@ public class DataInitializer implements CommandLineRunner {
                     .build());
         }
         accommodationRepository.save(aguaribay);
+        initRoomTypesForCabin(aguaribay);
         log.info("✔ Alojamiento 1 sincronizado: Cabañas El Aguaribay");
 
         // ==========================================
@@ -577,6 +579,68 @@ public class DataInitializer implements CommandLineRunner {
         ratePlanRepository.saveAll(List.of(tarifaFlexible, desayunoIncluido));
 
         log.info("✔ Inventario multi-unidad sembrado para la Hostería Boutique Los Nogales (3 tipos de habitación)");
+    }
+
+    private void initRoomTypesForCabin(Accommodation cabin) {
+        if (roomTypeRepository.countByAccommodationId(cabin.getId()) > 0) {
+            return;
+        }
+
+        RoomType standardDoble = RoomType.builder()
+                .accommodation(cabin)
+                .name("Doble Serrano Standard")
+                .description("Cabaña estándar de tronco y piedra con sommier matrimonial y vista al parque.")
+                .baseCapacity(2)
+                .maxCapacity(2)
+                .beds(1)
+                .totalUnits(4)
+                .basePricePerNight(new BigDecimal("85000.00"))
+                .isActive(true)
+                .amenities(new ArrayList<>(Arrays.asList("Wi-Fi", "Aire acondicionado", "Piscina", "Asador individual")))
+                .ratePlans(new ArrayList<>())
+                .build();
+
+        RatePlan tarifaStandard = RatePlan.builder()
+                .roomType(standardDoble)
+                .name("Tarifa estándar")
+                .description("Cancelación flexible hasta 7 días antes de la llegada.")
+                .pricePerNight(new BigDecimal("85000.00"))
+                .includesBreakfast(false)
+                .freeCancellation(true)
+                .minNights(1)
+                .isActive(true)
+                .build();
+        standardDoble.getRatePlans().add(tarifaStandard);
+
+        RoomType superiorFamiliar = RoomType.builder()
+                .accommodation(cabin)
+                .name("Superior Familiar Vista al Cerro")
+                .description("Cabaña amplia de 2 ambientes con sommier King, camas individuales y vista panorámica al cerro.")
+                .baseCapacity(2)
+                .maxCapacity(4)
+                .beds(3)
+                .totalUnits(2)
+                .basePricePerNight(new BigDecimal("110500.00"))
+                .isActive(true)
+                .amenities(new ArrayList<>(Arrays.asList("Wi-Fi", "Aire acondicionado", "Piscina", "Asador individual", "Vista al cerro")))
+                .ratePlans(new ArrayList<>())
+                .build();
+
+        RatePlan tarifaFamiliar = RatePlan.builder()
+                .roomType(superiorFamiliar)
+                .name("Tarifa familiar")
+                .description("Cancelación flexible hasta 7 días antes.")
+                .pricePerNight(new BigDecimal("110500.00"))
+                .includesBreakfast(false)
+                .freeCancellation(true)
+                .minNights(1)
+                .isActive(true)
+                .build();
+        superiorFamiliar.getRatePlans().add(tarifaFamiliar);
+
+        roomTypeRepository.saveAll(List.of(standardDoble, superiorFamiliar));
+        ratePlanRepository.saveAll(List.of(tarifaStandard, tarifaFamiliar));
+        log.info("✔ Tipologías de cabaña inicializadas para: {}", cabin.getName());
     }
 
     private void initAttractions() {
@@ -1024,11 +1088,19 @@ public class DataInitializer implements CommandLineRunner {
                 "La casona tiene un encanto histórico único y está conservada con muchísimo cariño. El desayuno serrano con pan casero y dulces regionales es espectacular."
         );
 
+        RoomType cabinStandard = roomTypeRepository.findByAccommodationIdOrderByNameAsc(cabin.getId()).stream()
+                .filter(rt -> rt.getName().toLowerCase().contains("standard") || rt.getName().toLowerCase().contains("doble"))
+                .findFirst().orElse(null);
+        RoomType cabinSuperior = roomTypeRepository.findByAccommodationIdOrderByNameAsc(cabin.getId()).stream()
+                .filter(rt -> rt.getName().toLowerCase().contains("superior") || rt.getName().toLowerCase().contains("familiar"))
+                .findFirst().orElse(null);
+
         // Reserva completada sin reseña previa para pruebas de envío real desde el portal
-        if (bookingRepository.findByBookingCode("CAP-2026-9901").isEmpty()) {
+        Booking pendingReviewBooking = bookingRepository.findByBookingCode("CAP-2026-9901").orElse(null);
+        if (pendingReviewBooking == null) {
             BigDecimal nightPrice = cabin.getPricePerNight() != null ? cabin.getPricePerNight() : BigDecimal.valueOf(85000.00);
             BigDecimal total = nightPrice.multiply(BigDecimal.valueOf(3));
-            Booking pendingReviewBooking = Booking.builder()
+            pendingReviewBooking = Booking.builder()
                     .bookingCode("CAP-2026-9901")
                     .checkIn(LocalDate.now().minusDays(15))
                     .checkOut(LocalDate.now().minusDays(12))
@@ -1045,16 +1117,43 @@ public class DataInitializer implements CommandLineRunner {
                     .guestPhone("+54 9 351 4567890")
                     .guestOrigin("Córdoba Capital")
                     .accommodation(cabin)
+                    .items(new ArrayList<>())
                     .build();
+            if (cabinSuperior != null) {
+                BookingItem item = BookingItem.builder()
+                        .booking(pendingReviewBooking)
+                        .roomType(cabinSuperior)
+                        .quantity(1)
+                        .guests(2)
+                        .pricePerNight(nightPrice)
+                        .subtotal(total)
+                        .build();
+                pendingReviewBooking.getItems().add(item);
+            }
             bookingRepository.save(pendingReviewBooking);
             log.info("✔ Reserva completada de prueba lista para reseñar: CAP-2026-9901");
+        } else if (cabinSuperior != null && (pendingReviewBooking.getItems() == null || pendingReviewBooking.getItems().isEmpty())) {
+            BookingItem item = BookingItem.builder()
+                    .booking(pendingReviewBooking)
+                    .roomType(cabinSuperior)
+                    .quantity(1)
+                    .guests(2)
+                    .pricePerNight(pendingReviewBooking.getPricePerNight())
+                    .subtotal(pendingReviewBooking.getTotalAmount())
+                    .build();
+            if (pendingReviewBooking.getItems() == null) {
+                pendingReviewBooking.setItems(new ArrayList<>());
+            }
+            pendingReviewBooking.getItems().add(item);
+            bookingRepository.save(pendingReviewBooking);
         }
 
         // Reserva PENDIENTE para pruebas de confirmacion / rechazo desde el dashboard del anfitrion
-        if (bookingRepository.findByBookingCode("CAP-2026-8801").isEmpty()) {
+        Booking pendingBooking = bookingRepository.findByBookingCode("CAP-2026-8801").orElse(null);
+        if (pendingBooking == null) {
             BigDecimal nightPrice = cabin.getPricePerNight() != null ? cabin.getPricePerNight() : BigDecimal.valueOf(85000.00);
             BigDecimal total = nightPrice.multiply(BigDecimal.valueOf(4));
-            Booking pendingBooking = Booking.builder()
+            pendingBooking = Booking.builder()
                     .bookingCode("CAP-2026-8801")
                     .checkIn(LocalDate.now().plusDays(10))
                     .checkOut(LocalDate.now().plusDays(14))
@@ -1072,9 +1171,35 @@ public class DataInitializer implements CommandLineRunner {
                     .guestOrigin("Buenos Aires")
                     .notes("Llegamos en micro cerca de las 15 hs.")
                     .accommodation(cabin)
+                    .items(new ArrayList<>())
                     .build();
+            if (cabinStandard != null) {
+                BookingItem item = BookingItem.builder()
+                        .booking(pendingBooking)
+                        .roomType(cabinStandard)
+                        .quantity(1)
+                        .guests(3)
+                        .pricePerNight(nightPrice)
+                        .subtotal(total)
+                        .build();
+                pendingBooking.getItems().add(item);
+            }
             bookingRepository.save(pendingBooking);
             log.info("✔ Reserva PENDIENTE de prueba creada con éxito: CAP-2026-8801");
+        } else if (cabinStandard != null && (pendingBooking.getItems() == null || pendingBooking.getItems().isEmpty())) {
+            BookingItem item = BookingItem.builder()
+                    .booking(pendingBooking)
+                    .roomType(cabinStandard)
+                    .quantity(1)
+                    .guests(3)
+                    .pricePerNight(pendingBooking.getPricePerNight())
+                    .subtotal(pendingBooking.getTotalAmount())
+                    .build();
+            if (pendingBooking.getItems() == null) {
+                pendingBooking.setItems(new ArrayList<>());
+            }
+            pendingBooking.getItems().add(item);
+            bookingRepository.save(pendingBooking);
         }
     }
 
