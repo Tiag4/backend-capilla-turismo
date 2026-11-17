@@ -78,6 +78,11 @@ public class CreateAccommodationDto {
     @Size(max = 60, message = "El tiempo de respuesta no puede exceder 60 caracteres")
     private String responseTime;
 
+    @Min(value = 0, message = "El tiempo de preparación no puede ser negativo")
+    @Max(value = 7, message = "El tiempo de preparación no puede exceder 7 días")
+    @Builder.Default
+    private Integer preparationDays = 0;
+
     @Builder.Default
     private Boolean hasBreakfast = false;
 

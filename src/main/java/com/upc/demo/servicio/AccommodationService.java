@@ -153,6 +153,7 @@ public class AccommodationService {
                 .cancellationPolicy(dto.getCancellationPolicy() != null ? dto.getCancellationPolicy().trim() : null)
                 .licenseNumber(dto.getLicenseNumber() != null ? dto.getLicenseNumber().trim() : null)
                 .responseTime(dto.getResponseTime() != null ? dto.getResponseTime().trim() : null)
+                .preparationDays(dto.getPreparationDays() != null ? dto.getPreparationDays() : 0)
                 .hasBreakfast(dto.getHasBreakfast() != null ? dto.getHasBreakfast() : false)
                 .breakfastType(dto.getBreakfastType() != null ? dto.getBreakfastType().trim() : null)
                 .amenities(dto.getAmenities() != null ? new ArrayList<>(dto.getAmenities()) : new ArrayList<>())
@@ -243,6 +244,9 @@ public class AccommodationService {
         }
         if (dto.getResponseTime() != null) {
             accommodation.setResponseTime(dto.getResponseTime().trim());
+        }
+        if (dto.getPreparationDays() != null) {
+            accommodation.setPreparationDays(dto.getPreparationDays());
         }
         if (dto.getHasBreakfast() != null) {
             accommodation.setHasBreakfast(dto.getHasBreakfast());

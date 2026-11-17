@@ -187,4 +187,61 @@ class AccommodationServiceTest {
         assertThat(response.getBreakfastType()).isEqualTo("Desayuno continental");
         verify(accommodationRepository).save(existing);
     }
+
+    @Test
+    @DisplayName("create debe persistir preparationDays correctamente")
+    void create_withPreparationDays_persistsPreparationDays() {
+        UUID hostId = UUID.randomUUID();
+        User host = User.builder().id(hostId).role(Role.HOST).build();
+
+        CreateAccommodationDto dto = CreateAccommodationDto.builder()
+                .name("Cabaña con Colchón de Limpieza")
+                .type(AccommodationType.CABIN)
+                .address("Calle Los Sauces 100")
+                .pricePerNight(new BigDecimal("90000"))
+                .maxGuests(4)
+                .preparationDays(1)
+                .build();
+
+        when(userRepository.findById(hostId)).thenReturn(Optional.of(host));
+        when(accommodationRepository.save(any(Accommodation.class))).thenAnswer(invocation -> {
+            Accommodation acc = invocation.getArgument(0);
+            acc.setId(UUID.randomUUID());
+            return acc;
+        });
+
+        AccommodationResponseDto response = accommodationService.create(dto, hostId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getPreparationDays()).isEqualTo(1);
+        verify(accommodationRepository).save(any(Accommodation.class));
+    }
+
+    @Test
+    @DisplayName("update debe actualizar preparationDays correctamente")
+    void update_withPreparationDays_updatesPreparationDays() {
+        UUID accommodationId = UUID.randomUUID();
+        UUID hostId = UUID.randomUUID();
+        User host = User.builder().id(hostId).role(Role.HOST).build();
+
+        Accommodation existing = Accommodation.builder()
+                .id(accommodationId)
+                .name("Cabaña Original")
+                .host(host)
+                .preparationDays(0)
+                .build();
+
+        UpdateAccommodationDto updateDto = UpdateAccommodationDto.builder()
+                .preparationDays(2)
+                .build();
+
+        when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(existing));
+        when(accommodationRepository.save(any(Accommodation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AccommodationResponseDto response = accommodationService.update(accommodationId, updateDto, hostId, false);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getPreparationDays()).isEqualTo(2);
+        verify(accommodationRepository).save(existing);
+    }
 }

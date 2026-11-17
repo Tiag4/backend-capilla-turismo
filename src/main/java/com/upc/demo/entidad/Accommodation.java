@@ -83,6 +83,10 @@ public class Accommodation {
     @Column(name = "response_time", length = 60)
     private String responseTime;
 
+    @Column(name = "preparation_days")
+    @Builder.Default
+    private Integer preparationDays = 0;
+
     @ElementCollection
     @CollectionTable(name = "accommodation_amenities", joinColumns = @JoinColumn(name = "accommodation_id"))
     @Column(name = "amenity")
@@ -153,5 +157,9 @@ public class Accommodation {
 
     public Integer getDownPaymentPercentage() {
         return this.downPaymentPercentage != null ? this.downPaymentPercentage : 50;
+    }
+
+    public Integer getPreparationDays() {
+        return this.preparationDays != null ? this.preparationDays : 0;
     }
 }
