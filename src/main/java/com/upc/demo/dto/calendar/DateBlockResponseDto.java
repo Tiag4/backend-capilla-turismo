@@ -19,6 +19,9 @@ public class DateBlockResponseDto {
     private UUID id;
     private UUID accommodationId;
     private String accommodationName;
+    private UUID roomTypeId;
+    private String roomTypeName;
+    private Integer unitsBlocked;
     private LocalDate startDate;
     private LocalDate endDate;
     private DateBlockReason reason;

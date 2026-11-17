@@ -171,14 +171,14 @@ public class BookingService {
 
     private BookingResponseDto createMultiUnitBooking(CreateBookingDto dto, Accommodation accommodation,
                                                       int totalNights, UserPrincipal currentUser) {
-        // Un bloqueo de fechas afecta al alojamiento completo, igual que en el flujo legacy
-        boolean bloqueada = dateBlockRepository.existsOverlappingBlock(
+        // Un bloqueo general afecta al alojamiento completo (cierre general o fuera de temporada)
+        boolean bloqueadaGeneral = dateBlockRepository.existsOverlappingGlobalBlock(
                 accommodation.getId(),
                 dto.getCheckIn(),
                 dto.getCheckOut()
         );
-        if (bloqueada) {
-            throw new ConflictException("El alojamiento tiene fechas bloqueadas por mantenimiento o uso propio en ese rango");
+        if (bloqueadaGeneral) {
+            throw new ConflictException("El establecimiento posee un bloqueo general de fechas en ese rango");
         }
 
         List<CreateBookingItemDto> requestedItems = new ArrayList<>(dto.getItems());
@@ -222,13 +222,15 @@ public class BookingService {
 
             long alreadyBooked = bookingItemRepository.sumBookedUnits(
                     roomType.getId(), effectiveCheckIn, effectiveCheckOut);
+            long manuallyBlocked = dateBlockRepository.sumBlockedUnits(
+                    roomType.getId(), effectiveCheckIn, effectiveCheckOut);
             int alreadyRequested = requestedUnitsByRoomType.getOrDefault(roomType.getId(), 0);
             int totalUnits = roomType.getTotalUnits() != null ? roomType.getTotalUnits() : 0;
-            int availableUnits = Math.max(0, totalUnits - (int) alreadyBooked - alreadyRequested);
+            int availableUnits = Math.max(0, totalUnits - (int) alreadyBooked - (int) manuallyBlocked - alreadyRequested);
 
             if (item.getQuantity() > availableUnits) {
                 throw new ConflictException("No hay disponibilidad suficiente para el tipo de habitación '"
-                        + roomType.getName() + "'");
+                        + roomType.getName() + "' (disponibles: " + availableUnits + ")");
             }
 
             int maxGuestsForItem = roomType.getMaxCapacity() * item.getQuantity();

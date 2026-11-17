@@ -8,10 +8,13 @@ import com.upc.demo.dto.calendar.CreateDateBlockDto;
 import com.upc.demo.dto.calendar.DateBlockResponseDto;
 import com.upc.demo.entidad.Accommodation;
 import com.upc.demo.entidad.DateBlock;
+import com.upc.demo.entidad.RoomType;
 import com.upc.demo.entidad.enums.DateBlockReason;
 import com.upc.demo.repositorio.AccommodationRepository;
+import com.upc.demo.repositorio.BookingItemRepository;
 import com.upc.demo.repositorio.BookingRepository;
 import com.upc.demo.repositorio.DateBlockRepository;
+import com.upc.demo.repositorio.RoomTypeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +30,8 @@ public class DateBlockService {
     private final DateBlockRepository dateBlockRepository;
     private final AccommodationRepository accommodationRepository;
     private final BookingRepository bookingRepository;
+    private final RoomTypeRepository roomTypeRepository;
+    private final BookingItemRepository bookingItemRepository;
 
     @Transactional
     public DateBlockResponseDto create(UUID accommodationId, CreateDateBlockDto dto, UUID userId, boolean isAdmin) {
@@ -39,16 +44,49 @@ public class DateBlockService {
 
         validateOwnership(accommodation, userId, isAdmin);
 
-        if (bookingRepository.existsOverlappingBooking(accommodationId, dto.getStartDate(), dto.getEndDate())) {
-            throw new ConflictException("No se puede bloquear el rango: existen reservas activas en esas fechas");
-        }
+        RoomType roomType = null;
+        int unitsToBlock = 1;
 
-        if (dateBlockRepository.existsOverlappingBlock(accommodationId, dto.getStartDate(), dto.getEndDate())) {
-            throw new ConflictException("Ya existe un bloqueo de fechas que se superpone con el rango solicitado");
+        if (dto.getRoomTypeId() != null) {
+            roomType = roomTypeRepository.findById(dto.getRoomTypeId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Tipo de habitación no encontrado con ID: " + dto.getRoomTypeId()));
+
+            if (roomType.getAccommodation() == null || !roomType.getAccommodation().getId().equals(accommodationId)) {
+                throw new BadRequestException("El tipo de habitación no pertenece al alojamiento indicado");
+            }
+
+            int totalUnits = roomType.getTotalUnits() != null ? roomType.getTotalUnits() : 1;
+            unitsToBlock = (dto.getUnitsBlocked() != null && dto.getUnitsBlocked() > 0)
+                    ? dto.getUnitsBlocked()
+                    : 1;
+
+            if (unitsToBlock > totalUnits) {
+                throw new BadRequestException("No se pueden bloquear más unidades (" + unitsToBlock 
+                        + ") que el cupo total habilitado (" + totalUnits + ")");
+            }
+
+            long alreadyBooked = bookingItemRepository.sumBookedUnits(roomType.getId(), dto.getStartDate(), dto.getEndDate());
+            long alreadyBlocked = dateBlockRepository.sumBlockedUnits(roomType.getId(), dto.getStartDate(), dto.getEndDate());
+
+            if (alreadyBooked + alreadyBlocked + unitsToBlock > totalUnits) {
+                throw new ConflictException("No se pueden bloquear " + unitsToBlock + " unidades: entre reservas confirmadas ("
+                        + alreadyBooked + ") y bloqueos existentes (" + alreadyBlocked + ") se supera el cupo total (" + totalUnits + ")");
+            }
+        } else {
+            // Bloqueo global de toda la propiedad
+            if (bookingRepository.existsOverlappingBooking(accommodationId, dto.getStartDate(), dto.getEndDate())) {
+                throw new ConflictException("No se puede realizar un bloqueo general: existen reservas activas en esas fechas");
+            }
+
+            if (dateBlockRepository.existsOverlappingGlobalBlock(accommodationId, dto.getStartDate(), dto.getEndDate())) {
+                throw new ConflictException("Ya existe un bloqueo general que se superpone con el rango solicitado");
+            }
         }
 
         DateBlock block = DateBlock.builder()
                 .accommodation(accommodation)
+                .roomType(roomType)
+                .unitsBlocked(unitsToBlock)
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
                 .reason(dto.getReason() != null ? dto.getReason() : DateBlockReason.MAINTENANCE)
@@ -89,10 +127,14 @@ public class DateBlockService {
 
     private DateBlockResponseDto mapToResponseDto(DateBlock block) {
         Accommodation accommodation = block.getAccommodation();
+        RoomType roomType = block.getRoomType();
         return DateBlockResponseDto.builder()
                 .id(block.getId())
                 .accommodationId(accommodation != null ? accommodation.getId() : null)
                 .accommodationName(accommodation != null ? accommodation.getName() : null)
+                .roomTypeId(roomType != null ? roomType.getId() : null)
+                .roomTypeName(roomType != null ? roomType.getName() : null)
+                .unitsBlocked(block.getUnitsBlocked())
                 .startDate(block.getStartDate())
                 .endDate(block.getEndDate())
                 .reason(block.getReason())

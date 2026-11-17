@@ -12,7 +12,8 @@ import java.util.UUID;
 @Table(
     name = "date_blocks",
     indexes = {
-        @Index(name = "idx_date_block_accommodation_dates", columnList = "accommodation_id, start_date, end_date")
+        @Index(name = "idx_date_block_accommodation_dates", columnList = "accommodation_id, start_date, end_date"),
+        @Index(name = "idx_date_block_room_type", columnList = "room_type_id")
     }
 )
 @Getter
@@ -29,6 +30,14 @@ public class DateBlock {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "accommodation_id", nullable = false)
     private Accommodation accommodation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_type_id")
+    private RoomType roomType;
+
+    @Column(name = "units_blocked", nullable = false)
+    @Builder.Default
+    private Integer unitsBlocked = 1;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
@@ -53,5 +62,12 @@ public class DateBlock {
         if (this.reason == null) {
             this.reason = DateBlockReason.MAINTENANCE;
         }
+        if (this.unitsBlocked == null || this.unitsBlocked < 1) {
+            this.unitsBlocked = 1;
+        }
+    }
+
+    public Integer getUnitsBlocked() {
+        return this.unitsBlocked != null ? this.unitsBlocked : 1;
     }
 }

@@ -3,6 +3,7 @@ package com.upc.demo.dto.calendar;
 import com.upc.demo.entidad.enums.DateBlockReason;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -11,6 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -25,6 +27,12 @@ public class CreateDateBlockDto {
     @NotNull(message = "La fecha de fin es obligatoria")
     @Future(message = "La fecha de fin debe ser una fecha futura")
     private LocalDate endDate;
+
+    private UUID roomTypeId;
+
+    @Min(value = 1, message = "La cantidad de unidades a bloquear debe ser al menos 1")
+    @Builder.Default
+    private Integer unitsBlocked = 1;
 
     private DateBlockReason reason;
 
