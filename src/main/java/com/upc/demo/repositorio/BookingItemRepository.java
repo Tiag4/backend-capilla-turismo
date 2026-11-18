@@ -42,4 +42,13 @@ public interface BookingItemRepository extends JpaRepository<BookingItem, UUID> 
     boolean existsActiveBookingsByRoomTypeId(@Param("roomTypeId") UUID roomTypeId);
 
     boolean existsByRatePlanId(UUID ratePlanId);
+
+    @Query("SELECT bi FROM BookingItem bi " +
+           "WHERE bi.roomType.accommodation.id = :accommodationId " +
+           "AND bi.booking.status IN (com.upc.demo.entidad.enums.BookingStatus.PENDING, com.upc.demo.entidad.enums.BookingStatus.CONFIRMED) " +
+           "AND bi.booking.checkOut >= :fromDate")
+    List<BookingItem> findActiveItemsByAccommodation(
+        @Param("accommodationId") UUID accommodationId,
+        @Param("fromDate") LocalDate fromDate
+    );
 }

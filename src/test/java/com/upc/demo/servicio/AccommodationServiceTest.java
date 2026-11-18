@@ -2,14 +2,22 @@ package com.upc.demo.servicio;
 
 import com.upc.demo.dto.accommodation.AccommodationResponseDto;
 import com.upc.demo.dto.accommodation.CreateAccommodationDto;
+import com.upc.demo.dto.accommodation.UnavailableDateRangeDto;
 import com.upc.demo.dto.accommodation.UpdateAccommodationDto;
 import com.upc.demo.entidad.Accommodation;
 import com.upc.demo.entidad.AccommodationImage;
+import com.upc.demo.entidad.Booking;
+import com.upc.demo.entidad.DateBlock;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.AccommodationType;
+import com.upc.demo.entidad.enums.DateBlockReason;
 import com.upc.demo.entidad.enums.Role;
 import com.upc.demo.repositorio.AccommodationImageRepository;
 import com.upc.demo.repositorio.AccommodationRepository;
+import com.upc.demo.repositorio.BookingItemRepository;
+import com.upc.demo.repositorio.BookingRepository;
+import com.upc.demo.repositorio.DateBlockRepository;
+import com.upc.demo.repositorio.RoomTypeRepository;
 import com.upc.demo.repositorio.UserRepository;
 import com.upc.demo.servicio.storage.StorageService;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +52,18 @@ class AccommodationServiceTest {
 
     @Mock
     private StorageService storageService;
+
+    @Mock
+    private BookingRepository bookingRepository;
+
+    @Mock
+    private DateBlockRepository dateBlockRepository;
+
+    @Mock
+    private RoomTypeRepository roomTypeRepository;
+
+    @Mock
+    private BookingItemRepository bookingItemRepository;
 
     @InjectMocks
     private AccommodationService accommodationService;
@@ -243,5 +264,65 @@ class AccommodationServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getPreparationDays()).isEqualTo(2);
         verify(accommodationRepository).save(existing);
+    }
+
+    @Test
+    @DisplayName("getCalendarAvailability consolida bloqueos manuales, reservas activas y colchón de preparación")
+    void getCalendarAvailability_consolidatesBlocksBookingsAndBuffer() {
+        UUID accommodationId = UUID.randomUUID();
+        Accommodation accommodation = Accommodation.builder()
+                .id(accommodationId)
+                .name("Cabaña Las Pircas")
+                .preparationDays(1)
+                .build();
+
+        LocalDate blockStart = LocalDate.now().plusDays(2);
+        LocalDate blockEnd = LocalDate.now().plusDays(5);
+        DateBlock manualBlock = DateBlock.builder()
+                .id(UUID.randomUUID())
+                .accommodation(accommodation)
+                .startDate(blockStart)
+                .endDate(blockEnd)
+                .reason(DateBlockReason.MAINTENANCE)
+                .notes("Reparación de solárium")
+                .build();
+
+        LocalDate bookingIn = LocalDate.now().plusDays(10);
+        LocalDate bookingOut = LocalDate.now().plusDays(14);
+        Booking booking = Booking.builder()
+                .id(UUID.randomUUID())
+                .accommodation(accommodation)
+                .checkIn(bookingIn)
+                .checkOut(bookingOut)
+                .build();
+
+        when(accommodationRepository.findById(accommodationId)).thenReturn(Optional.of(accommodation));
+        when(dateBlockRepository.findByAccommodationIdOrderByStartDateAsc(accommodationId))
+                .thenReturn(List.of(manualBlock));
+        when(roomTypeRepository.countByAccommodationId(accommodationId)).thenReturn(0L);
+        when(bookingRepository.findActiveBookingsByAccommodation(eq(accommodationId), any(LocalDate.class)))
+                .thenReturn(List.of(booking));
+
+        List<UnavailableDateRangeDto> ranges = accommodationService.getCalendarAvailability(accommodationId, null);
+
+        assertThat(ranges).hasSize(3);
+
+        // 1. Bloqueo manual
+        UnavailableDateRangeDto rBlock = ranges.stream().filter(r -> "DATE_BLOCK".equals(r.getType())).findFirst().orElseThrow();
+        assertThat(rBlock.getStartDate()).isEqualTo(blockStart);
+        assertThat(rBlock.getEndDate()).isEqualTo(blockEnd);
+        assertThat(rBlock.getReason()).isEqualTo("MAINTENANCE");
+
+        // 2. Reserva de huésped
+        UnavailableDateRangeDto rBooking = ranges.stream().filter(r -> "BOOKING".equals(r.getType())).findFirst().orElseThrow();
+        assertThat(rBooking.getStartDate()).isEqualTo(bookingIn);
+        assertThat(rBooking.getEndDate()).isEqualTo(bookingOut);
+        assertThat(rBooking.getReason()).isEqualTo("BOOKED");
+
+        // 3. Colchón de preparación de 1 día posterior al check-out
+        UnavailableDateRangeDto rPrep = ranges.stream().filter(r -> "PREPARATION".equals(r.getType())).findFirst().orElseThrow();
+        assertThat(rPrep.getStartDate()).isEqualTo(bookingOut);
+        assertThat(rPrep.getEndDate()).isEqualTo(bookingOut.plusDays(1));
+        assertThat(rPrep.getReason()).isEqualTo("PREPARATION");
     }
 }

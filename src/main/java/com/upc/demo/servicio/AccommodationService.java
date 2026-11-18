@@ -6,14 +6,23 @@ import com.upc.demo.config.exception.ResourceNotFoundException;
 import com.upc.demo.dto.accommodation.AccommodationImageDto;
 import com.upc.demo.dto.accommodation.AccommodationResponseDto;
 import com.upc.demo.dto.accommodation.CreateAccommodationDto;
+import com.upc.demo.dto.accommodation.UnavailableDateRangeDto;
 import com.upc.demo.dto.accommodation.UpdateAccommodationDto;
 import com.upc.demo.entidad.Accommodation;
 import com.upc.demo.entidad.AccommodationImage;
+import com.upc.demo.entidad.Booking;
+import com.upc.demo.entidad.BookingItem;
+import com.upc.demo.entidad.DateBlock;
+import com.upc.demo.entidad.RoomType;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.AccommodationType;
 import com.upc.demo.entidad.enums.ImageModerationStatus;
 import com.upc.demo.repositorio.AccommodationImageRepository;
 import com.upc.demo.repositorio.AccommodationRepository;
+import com.upc.demo.repositorio.BookingItemRepository;
+import com.upc.demo.repositorio.BookingRepository;
+import com.upc.demo.repositorio.DateBlockRepository;
+import com.upc.demo.repositorio.RoomTypeRepository;
 import com.upc.demo.repositorio.UserRepository;
 import com.upc.demo.servicio.storage.StorageService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +33,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -37,6 +49,10 @@ public class AccommodationService {
     private final AccommodationImageRepository accommodationImageRepository;
     private final UserRepository userRepository;
     private final StorageService storageService;
+    private final BookingRepository bookingRepository;
+    private final DateBlockRepository dateBlockRepository;
+    private final RoomTypeRepository roomTypeRepository;
+    private final BookingItemRepository bookingItemRepository;
 
     @Transactional(readOnly = true)
     public List<AccommodationResponseDto> getAll(AccommodationType type,
@@ -357,6 +373,163 @@ public class AccommodationService {
         }
 
         accommodationImageRepository.delete(image);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UnavailableDateRangeDto> getCalendarAvailability(UUID accommodationId, UUID roomTypeId) {
+        Accommodation accommodation = findAccommodationById(accommodationId);
+
+        List<UnavailableDateRangeDto> unavailableRanges = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+
+        // 1. Bloqueos manuales del anfitrión (DateBlocks)
+        List<DateBlock> allBlocks = dateBlockRepository.findByAccommodationIdOrderByStartDateAsc(accommodationId);
+        for (DateBlock block : allBlocks) {
+            boolean matchesRoom = (roomTypeId == null && block.getRoomType() == null)
+                    || (roomTypeId != null && (block.getRoomType() == null || block.getRoomType().getId().equals(roomTypeId)));
+
+            if (matchesRoom && !block.getEndDate().isBefore(today)) {
+                unavailableRanges.add(UnavailableDateRangeDto.builder()
+                        .id("block-" + block.getId())
+                        .accommodationId(accommodationId)
+                        .roomTypeId(block.getRoomType() != null ? block.getRoomType().getId() : null)
+                        .startDate(block.getStartDate())
+                        .endDate(block.getEndDate())
+                        .reason(block.getReason() != null ? block.getReason().name() : "MAINTENANCE")
+                        .type("DATE_BLOCK")
+                        .notes(block.getNotes())
+                        .build());
+            }
+        }
+
+        int prepDays = accommodation.getPreparationDays() != null ? accommodation.getPreparationDays() : 0;
+        boolean hasRoomTypes = roomTypeRepository.countByAccommodationId(accommodationId) > 0;
+
+        // 2. Reservas de huéspedes
+        if (!hasRoomTypes) {
+            // Unidad única: cada reserva activa ocupa la propiedad por completo
+            List<Booking> activeBookings = bookingRepository.findActiveBookingsByAccommodation(accommodationId, today);
+            for (Booking booking : activeBookings) {
+                unavailableRanges.add(UnavailableDateRangeDto.builder()
+                        .id("booking-" + booking.getId())
+                        .accommodationId(accommodationId)
+                        .startDate(booking.getCheckIn())
+                        .endDate(booking.getCheckOut())
+                        .reason("BOOKED")
+                        .type("BOOKING")
+                        .build());
+
+                // Si hay colchón de limpieza/preparación configurado, se agrega el período bloqueado subsiguiente
+                if (prepDays > 0) {
+                    unavailableRanges.add(UnavailableDateRangeDto.builder()
+                            .id("prep-" + booking.getId())
+                            .accommodationId(accommodationId)
+                            .startDate(booking.getCheckOut())
+                            .endDate(booking.getCheckOut().plusDays(prepDays))
+                            .reason("PREPARATION")
+                            .type("PREPARATION")
+                            .notes("Período de desinfección y preparación posterior a estadía")
+                            .build());
+                }
+            }
+        } else {
+            // Multi-habitación (Hoteles / Complejos con tipologías):
+            if (roomTypeId != null) {
+                RoomType roomType = roomTypeRepository.findById(roomTypeId).orElse(null);
+                if (roomType != null && roomType.getAccommodation().getId().equals(accommodationId)) {
+                    int totalUnits = roomType.getTotalUnits() != null ? roomType.getTotalUnits() : 1;
+                    List<BookingItem> items = bookingItemRepository.findActiveItemsByAccommodation(accommodationId, today);
+                    List<BookingItem> roomItems = items.stream()
+                            .filter(i -> i.getRoomType() != null && i.getRoomType().getId().equals(roomTypeId))
+                            .collect(Collectors.toList());
+
+                    if (totalUnits == 1) {
+                        for (BookingItem item : roomItems) {
+                            Booking b = item.getBooking();
+                            if (b != null) {
+                                unavailableRanges.add(UnavailableDateRangeDto.builder()
+                                        .id("booking-item-" + item.getId())
+                                        .accommodationId(accommodationId)
+                                        .roomTypeId(roomTypeId)
+                                        .startDate(b.getCheckIn())
+                                        .endDate(b.getCheckOut())
+                                        .reason("BOOKED")
+                                        .type("BOOKING")
+                                        .build());
+
+                                if (prepDays > 0) {
+                                    unavailableRanges.add(UnavailableDateRangeDto.builder()
+                                            .id("prep-item-" + item.getId())
+                                            .accommodationId(accommodationId)
+                                            .roomTypeId(roomTypeId)
+                                            .startDate(b.getCheckOut())
+                                            .endDate(b.getCheckOut().plusDays(prepDays))
+                                            .reason("PREPARATION")
+                                            .type("PREPARATION")
+                                            .notes("Período de desinfección y preparación posterior a estadía")
+                                            .build());
+                                }
+                            }
+                        }
+                    } else {
+                        // Allotment multi-unidad: calcular por día si se agota el cupo
+                        Set<LocalDate> soldOutDates = calculateSoldOutDates(roomType, totalUnits, roomItems, allBlocks, today);
+                        List<LocalDate> sortedDates = new ArrayList<>(soldOutDates);
+                        Collections.sort(sortedDates);
+
+                        int i = 0;
+                        while (i < sortedDates.size()) {
+                            LocalDate rangeStart = sortedDates.get(i);
+                            LocalDate current = rangeStart;
+                            while (i + 1 < sortedDates.size() && sortedDates.get(i + 1).equals(current.plusDays(1))) {
+                                i++;
+                                current = sortedDates.get(i);
+                            }
+                            unavailableRanges.add(UnavailableDateRangeDto.builder()
+                                    .id("allotment-" + roomTypeId + "-" + rangeStart)
+                                    .accommodationId(accommodationId)
+                                    .roomTypeId(roomTypeId)
+                                    .startDate(rangeStart)
+                                    .endDate(current.plusDays(1))
+                                    .reason("BOOKED")
+                                    .type("BOOKING")
+                                    .notes("Cupo total agotado para esta categoría")
+                                    .build());
+                            i++;
+                        }
+                    }
+                }
+            }
+        }
+
+        return unavailableRanges;
+    }
+
+    private Set<LocalDate> calculateSoldOutDates(RoomType roomType, int totalUnits, List<BookingItem> items, List<DateBlock> blocks, LocalDate fromDate) {
+        Set<LocalDate> soldOut = new HashSet<>();
+        LocalDate maxDate = fromDate.plusMonths(6);
+
+        for (LocalDate date = fromDate; !date.isAfter(maxDate); date = date.plusDays(1)) {
+            LocalDate d = date;
+            long bookedUnits = items.stream()
+                    .filter(i -> i.getBooking() != null
+                            && !d.isBefore(i.getBooking().getCheckIn())
+                            && d.isBefore(i.getBooking().getCheckOut()))
+                    .mapToLong(BookingItem::getQuantity)
+                    .sum();
+
+            long blockedUnits = blocks.stream()
+                    .filter(b -> (b.getRoomType() == null || b.getRoomType().getId().equals(roomType.getId()))
+                            && !d.isBefore(b.getStartDate())
+                            && d.isBefore(b.getEndDate()))
+                    .mapToLong(DateBlock::getUnitsBlocked)
+                    .sum();
+
+            if (bookedUnits + blockedUnits >= totalUnits) {
+                soldOut.add(date);
+            }
+        }
+        return soldOut;
     }
 
     private boolean isHostEnabled(Accommodation accommodation) {

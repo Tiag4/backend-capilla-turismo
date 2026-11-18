@@ -4,6 +4,7 @@ import com.upc.demo.config.UserPrincipal;
 import com.upc.demo.dto.accommodation.AccommodationImageDto;
 import com.upc.demo.dto.accommodation.AccommodationResponseDto;
 import com.upc.demo.dto.accommodation.CreateAccommodationDto;
+import com.upc.demo.dto.accommodation.UnavailableDateRangeDto;
 import com.upc.demo.dto.accommodation.UpdateAccommodationDto;
 import com.upc.demo.entidad.enums.AccommodationType;
 import com.upc.demo.entidad.enums.Role;
@@ -52,6 +53,13 @@ public class AccommodationController {
     @GetMapping("/{id}")
     public ResponseEntity<AccommodationResponseDto> getAccommodationById(@PathVariable UUID id) {
         return ResponseEntity.ok(accommodationService.getById(id));
+    }
+
+    @GetMapping("/{id}/calendar-availability")
+    public ResponseEntity<List<UnavailableDateRangeDto>> getCalendarAvailability(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID roomTypeId) {
+        return ResponseEntity.ok(accommodationService.getCalendarAvailability(id, roomTypeId));
     }
 
     @PostMapping
