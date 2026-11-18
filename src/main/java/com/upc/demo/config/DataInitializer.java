@@ -116,7 +116,7 @@ public class DataInitializer implements CommandLineRunner {
         User host1 = userRepository.findByEmail(host1Email).orElseGet(() ->
                 userRepository.save(User.builder()
                         .email(host1Email)
-                        .password(passwordEncoder.encode("HostCapilla2026!"))
+                        .password(passwordEncoder.encode("Demo1234!"))
                         .name("Eduardo")
                         .lastName("Solana (Cabañas El Aguaribay)")
                         .role(Role.HOST)
@@ -127,6 +127,7 @@ public class DataInitializer implements CommandLineRunner {
         host1.setName("Eduardo");
         host1.setLastName("Solana (Cabañas El Aguaribay)");
         host1.setPhone("+54 9 3548 568548");
+        host1.setPassword(passwordEncoder.encode("Demo1234!"));
         host1.setIsActive(true);
         userRepository.save(host1);
 
@@ -1055,6 +1056,22 @@ public class DataInitializer implements CommandLineRunner {
                 .findFirst()
                 .orElse(cabin);
 
+        Accommodation adrianita = allAccommodations.stream()
+                .filter(a -> "Hostería Adrianita".equals(a.getName()))
+                .findFirst()
+                .orElse(hotel);
+
+        Accommodation alpaSierras = allAccommodations.stream()
+                .filter(a -> "Cabañas Alpa Sierras".equals(a.getName()))
+                .findFirst()
+                .orElse(cabin);
+
+        Accommodation casablanca = allAccommodations.stream()
+                .filter(a -> "Complejo Turístico Casablanca".equals(a.getName()))
+                .findFirst()
+                .orElse(cabin);
+
+        // 1. Reseñas para Cabañas El Aguaribay
         seedCompletedBookingWithReview(
                 cabin,
                 "CAP-2026-4812",
@@ -1065,7 +1082,7 @@ public class DataInitializer implements CommandLineRunner {
                 LocalDate.now().minusDays(45),
                 LocalDate.now().minusDays(42),
                 "Septiembre 2026",
-                5, 5, 5, 5,
+                5, 5, 5, 5, 5, 5, 5,
                 "Una experiencia hermosa al pie del Uritorco. La cabaña impecable, con todo lo necesario para cocinar y descansar. La pileta climatizada fue un diferencial enorme para disfrutar a la vuelta de las caminatas."
         );
 
@@ -1079,10 +1096,40 @@ public class DataInitializer implements CommandLineRunner {
                 LocalDate.now().minusDays(70),
                 LocalDate.now().minusDays(66),
                 "Agosto 2026",
-                5, 5, 5, 4,
+                5, 5, 5, 5, 5, 5, 4,
                 "Excelente atención de los dueños desde que llegamos. El predio es súper silencioso de noche, ideal para desconectar del ruido de la ciudad. El WiFi funcionó perfecto incluso para trabajar."
         );
 
+        // 2. Reseñas para Hostería Adrianita
+        seedCompletedBookingWithReview(
+                adrianita,
+                "CAP-2026-7201",
+                "Valentina Torres",
+                "valentina.torres@example.com",
+                "+54 9 11 38291044",
+                "Pilar, Buenos Aires",
+                LocalDate.now().minusDays(50),
+                LocalDate.now().minusDays(47),
+                "Septiembre 2026",
+                5, 5, 5, 5, 5, 5, 5,
+                "La atención de Adriana es maravillosa, te hace sentir como en casa desde el primer minuto. El desayuno serrano casero es inmejorable, con dulces regionales riquísimos y pan caliente. La ubicación en pleno centro permite caminar a todos lados."
+        );
+
+        seedCompletedBookingWithReview(
+                adrianita,
+                "CAP-2026-7202",
+                "Gonzalo Ríos",
+                "gonzalo.rios@example.com",
+                "+54 9 341 6291845",
+                "Rosario, Santa Fe",
+                LocalDate.now().minusDays(80),
+                LocalDate.now().minusDays(77),
+                "Agosto 2026",
+                5, 5, 5, 5, 5, 5, 4,
+                "Excelente relación precio-calidad. Las habitaciones súper limpias y calefaccionadas para las noches frescas. La tranquilidad del lugar y la cercanía a la plaza hacen que sea una opción ideal para descansar."
+        );
+
+        // 3. Reseñas para Hostería La Atalaya
         seedCompletedBookingWithReview(
                 hotel,
                 "CAP-2026-5102",
@@ -1093,8 +1140,52 @@ public class DataInitializer implements CommandLineRunner {
                 LocalDate.now().minusDays(35),
                 LocalDate.now().minusDays(32),
                 "Septiembre 2026",
-                5, 5, 5, 5,
+                5, 5, 5, 5, 5, 5, 5,
                 "La casona tiene un encanto histórico único y está conservada con muchísimo cariño. El desayuno serrano con pan casero y dulces regionales es espectacular."
+        );
+
+        seedCompletedBookingWithReview(
+                hotel,
+                "CAP-2026-5103",
+                "Clara Benítez",
+                "clara.benitez@example.com",
+                "+54 9 342 5812903",
+                "Santa Fe",
+                LocalDate.now().minusDays(60),
+                LocalDate.now().minusDays(57),
+                "Agosto 2026",
+                5, 5, 5, 5, 5, 5, 5,
+                "Ubicación inmejorable en Barrio La Banda para moverse a pie por el sendero hacia El Zapato y el perilago. El deck panorámico al atardecer es una maravilla. Sin dudas volveremos."
+        );
+
+        // 4. Reseña para Cabañas Alpa Sierras
+        seedCompletedBookingWithReview(
+                alpaSierras,
+                "CAP-2026-6301",
+                "Sofía Pellegrini",
+                "sofia.pellegrini@example.com",
+                "+54 9 3541 498210",
+                "Villa Carlos Paz, Córdoba",
+                LocalDate.now().minusDays(40),
+                LocalDate.now().minusDays(37),
+                "Septiembre 2026",
+                5, 5, 5, 5, 5, 5, 5,
+                "La paz que hay en el predio es inigualable. La cabaña es espaciosa, con buena sombra de árboles autóctonos y el asador impecable. María siempre atenta a cualquier necesidad."
+        );
+
+        // 5. Reseña para Complejo Casablanca
+        seedCompletedBookingWithReview(
+                casablanca,
+                "CAP-2026-8401",
+                "Diego Mansilla",
+                "diego.mansilla@example.com",
+                "+54 9 351 7219843",
+                "Córdoba Capital",
+                LocalDate.now().minusDays(30),
+                LocalDate.now().minusDays(27),
+                "Octubre 2026",
+                5, 5, 5, 5, 5, 5, 4,
+                "El parque de 5.000 metros y la pileta olímpica son un lujo para ir con chicos. Cabaña completa, cómoda y segura. Todo funcionó a la perfección durante la estadía."
         );
 
         RoomType cabinStandard = roomTypeRepository.findByAccommodationIdOrderByNameAsc(cabin.getId()).stream()
@@ -1224,8 +1315,11 @@ public class DataInitializer implements CommandLineRunner {
             String stayDate,
             int rating,
             int cleanliness,
+            int accuracy,
+            int checkInRating,
             int hostRating,
             int locationRating,
+            int valueRating,
             String comment
     ) {
         Booking booking = bookingRepository.findByBookingCode(bookingCode).orElse(null);
@@ -1257,8 +1351,9 @@ public class DataInitializer implements CommandLineRunner {
             booking = bookingRepository.save(booking);
         }
 
-        if (!reviewRepository.existsByBookingCodeIgnoreCase(bookingCode)) {
-            Review review = Review.builder()
+        Review review = reviewRepository.findByBookingCodeIgnoreCase(bookingCode).orElse(null);
+        if (review == null) {
+            review = Review.builder()
                     .booking(booking)
                     .accommodation(accommodation)
                     .bookingCode(bookingCode)
@@ -1267,12 +1362,28 @@ public class DataInitializer implements CommandLineRunner {
                     .stayDate(stayDate)
                     .rating(rating)
                     .cleanlinessRating(cleanliness)
+                    .accuracyRating(accuracy)
+                    .checkInRating(checkInRating)
                     .hostRating(hostRating)
                     .locationRating(locationRating)
+                    .valueRating(valueRating)
                     .comment(comment)
                     .status(ReviewStatus.APPROVED)
                     .moderatedAt(LocalDateTime.now())
                     .build();
+            reviewRepository.save(review);
+        } else {
+            review.setRating(rating);
+            review.setCleanlinessRating(cleanliness);
+            review.setAccuracyRating(accuracy);
+            review.setCheckInRating(checkInRating);
+            review.setHostRating(hostRating);
+            review.setLocationRating(locationRating);
+            review.setValueRating(valueRating);
+            review.setStayDate(stayDate);
+            review.setGuestOrigin(guestOrigin);
+            review.setComment(comment);
+            review.setStatus(ReviewStatus.APPROVED);
             reviewRepository.save(review);
         }
     }
