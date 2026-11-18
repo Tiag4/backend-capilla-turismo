@@ -81,6 +81,9 @@ public class CreateAccommodationDto {
     @Builder.Default
     private Boolean hasBreakfast = false;
 
+    @Builder.Default
+    private Boolean isFeatured = false;
+
     @Size(max = 150, message = "El tipo de desayuno no puede exceder 150 caracteres")
     private String breakfastType;
 

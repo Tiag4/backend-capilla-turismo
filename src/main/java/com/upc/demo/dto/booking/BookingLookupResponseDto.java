@@ -38,5 +38,8 @@ public class BookingLookupResponseDto {
     private String bankName;
     private BookingStatus status;
     private String guestName;
+    private String guestEmail;
+    private String guestPhone;
+    private String hostPhone;
     private LocalDateTime createdAt;
 }

@@ -384,7 +384,8 @@ public class BookingService {
         }
 
         Booking booking = bookingRepository
-                .findByBookingCodeAndGuestEmailIgnoreCase(code.trim(), email.trim().toLowerCase())
+                .findByBookingCodeIgnoreCaseAndGuestEmailIgnoreCase(code.trim().toUpperCase(), email.trim().toLowerCase())
+                .or(() -> bookingRepository.findByBookingCodeAndGuestEmailIgnoreCase(code.trim(), email.trim().toLowerCase()))
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No se encontro ninguna reserva con el codigo y correo especificados"));
 
@@ -428,7 +429,7 @@ public class BookingService {
             throw new BadRequestException("El código de reserva y el email son obligatorios");
         }
 
-        Booking booking = bookingRepository.findByBookingCodeAndGuestEmailIgnoreCase(code.trim(), email.trim().toLowerCase())
+        Booking booking = bookingRepository.findByBookingCodeIgnoreCaseAndGuestEmailIgnoreCase(code.trim().toUpperCase(), email.trim().toLowerCase())
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró ninguna reserva con el código y correo especificados"));
 
         Accommodation accommodation = booking.getAccommodation();
@@ -454,6 +455,7 @@ public class BookingService {
                     .locality(accommodation.getLocality())
                     .address(accommodation.getAddress())
                     .imageUrl(imageUrl)
+                    .phone(accommodation.getPhone())
                     .downPaymentPercentage(accommodation.getDownPaymentPercentage())
                     .bankAccountHolder(accommodation.getBankAccountHolder())
                     .bankCbu(accommodation.getBankCbu())
@@ -494,6 +496,9 @@ public class BookingService {
                 .bankName(booking.getAccommodation().getBankName())
                 .status(booking.getStatus())
                 .guestName(booking.getGuestName())
+                .guestEmail(booking.getGuestEmail())
+                .guestPhone(booking.getGuestPhone())
+                .hostPhone(accommodation != null ? accommodation.getPhone() : null)
                 .createdAt(booking.getCreatedAt())
                 .build();
     }

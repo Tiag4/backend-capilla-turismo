@@ -130,6 +130,11 @@ public class AccommodationService {
 
     @Transactional
     public AccommodationResponseDto create(CreateAccommodationDto dto, UUID hostId) {
+        return create(dto, hostId, false);
+    }
+
+    @Transactional
+    public AccommodationResponseDto create(CreateAccommodationDto dto, UUID hostId, boolean isAdmin) {
         User host = userRepository.findById(hostId)
                 .orElseThrow(() -> new ResourceNotFoundException("Host no encontrado con ID: " + hostId));
 
@@ -162,6 +167,7 @@ public class AccommodationService {
                 .bankAlias(dto.getBankAlias() != null ? dto.getBankAlias().trim() : null)
                 .bankName(dto.getBankName() != null ? dto.getBankName().trim() : null)
                 .isActive(true)
+                .isFeatured(isAdmin && Boolean.TRUE.equals(dto.getIsFeatured()))
                 .host(host)
                 .images(new ArrayList<>())
                 .build();
@@ -271,6 +277,9 @@ public class AccommodationService {
         if (dto.getBankName() != null) {
             accommodation.setBankName(dto.getBankName().trim());
         }
+        if (dto.getIsFeatured() != null && isAdmin) {
+            accommodation.setIsFeatured(dto.getIsFeatured());
+        }
 
         Accommodation updated = accommodationRepository.save(accommodation);
         return AccommodationResponseDto.fromEntity(updated);
@@ -340,6 +349,14 @@ public class AccommodationService {
         }
 
         accommodationImageRepository.delete(image);
+    }
+
+    @Transactional
+    public AccommodationResponseDto toggleFeatured(UUID id) {
+        Accommodation accommodation = findAccommodationById(id);
+        accommodation.setIsFeatured(!Boolean.TRUE.equals(accommodation.getIsFeatured()));
+        Accommodation updated = accommodationRepository.save(accommodation);
+        return AccommodationResponseDto.fromEntity(updated);
     }
 
     private boolean isHostEnabled(Accommodation accommodation) {

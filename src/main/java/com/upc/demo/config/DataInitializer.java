@@ -148,6 +148,7 @@ public class DataInitializer implements CommandLineRunner {
         aguaribay.setCheckInTime("14:00 hs");
         aguaribay.setCheckOutTime("10:00 hs");
         aguaribay.setPetPolicy("Mascotas medianas y pequeñas bienvenidas con aviso previo en parque.");
+        aguaribay.setIsFeatured(true);
         aguaribay.setCancellationPolicy("Cancelación flexible hasta 7 días antes de la fecha de ingreso.");
         aguaribay.setLicenseNumber("HAB-2024/089");
         aguaribay.setResponseTime("Responde habitualmente en menos de 1 hora");
@@ -224,6 +225,7 @@ public class DataInitializer implements CommandLineRunner {
         alpa.setPetPolicy("Mascotas medianas educadas permitidas previa consulta.");
         alpa.setCancellationPolicy("Cancelación flexible hasta 5 días antes de la llegada.");
         alpa.setLicenseNumber("HAB-2023/142");
+        alpa.setIsFeatured(true);
         alpa.setResponseTime("Responde habitualmente en el día");
         alpa.setHasBreakfast(false);
         alpa.setAmenities(new ArrayList<>(Arrays.asList("Piscina con solárium", "Vista al Cerro Uritorco", "Wi-Fi alta velocidad", "Asador techado", "Cochera cubierta", "Calefacción tiro balanceado")));
@@ -597,6 +599,33 @@ public class DataInitializer implements CommandLineRunner {
                 .status(AttractionStatus.OPEN)
                 .statusNotice(null)
                 .isFeatured(true)
+                .elevationGainMeters(979)
+                .maxElevationMsnm(1979)
+                .distanceKm(11.6)
+                .trailType("Ida y vuelta")
+                .terrainType("Sendero de montaña, piedra granítica suelta y acarreo final")
+                .openingHours("07:00 a 18:00 hs (todos los días)")
+                .cutoffTime("11:00 hs - Registro límite de ingreso obligatorio")
+                .hydrationRequirement("Mínimo obligatorio 2 litros de agua por persona. No hay agua potable en cumbre.")
+                .highlights(new ArrayList<>(List.of(
+                        "Cumbre a 1.979 msnm con cruz panorámica militar de 1930",
+                        "Flora autóctona de altura: molles serranos y bosques relictos de tabaquillo",
+                        "Vista completa al Dique El Cajón y faldeos de Los Terrones",
+                        "Puntos de descanso históricos: La Huella y Refugio de los Pastores"
+                )))
+                .recommendedGear(new ArrayList<>(List.of(
+                        "Calzado de trekking con suela de tracción marcada",
+                        "2 litros de agua por persona (control estricto en base)",
+                        "Campera cortaviento o polar liviano (la cumbre puede registrar 10°C menos)",
+                        "Gorra para sol, anteojos UV y protector solar SPF 50",
+                        "Bastones de trekking recomendados para el descenso",
+                        "Snacks energéticos (frutos secos, barras de cereal, fruta)"
+                )))
+                .safetyWarnings(new ArrayList<>(List.of(
+                        "Queda prohibido el ascenso en ojotas, crocs o zapatillas lisas de lona.",
+                        "Respetar el horario de retorno desde cumbre (16:00 hs máximo).",
+                        "En caso de niebla repentina, mantenerse siempre sobre la senda principal marcada."
+                )))
                 .images(new ArrayList<>())
                 .build();
         List.of(
@@ -626,6 +655,28 @@ public class DataInitializer implements CommandLineRunner {
                 .status(AttractionStatus.OPEN)
                 .statusNotice(null)
                 .isFeatured(true)
+                .elevationGainMeters(450)
+                .maxElevationMsnm(1400)
+                .distanceKm(8.5)
+                .trailType("Ida y vuelta")
+                .terrainType("Sendero serrano de herradura, cruces de arroyos y bosque nativo")
+                .openingHours("08:00 a 17:00 hs")
+                .cutoffTime("12:00 hs - Límite de inicio de trekking")
+                .hydrationRequirement("1.5 litros de agua por persona.")
+                .highlights(new ArrayList<>(List.of(
+                        "Espejo de agua cristalino a 1.400 msnm",
+                        "Quebradas vírgenes con avistaje de cóndores",
+                        "Cascadas y ollas de vertiente sobre el río Calabalumba"
+                )))
+                .recommendedGear(new ArrayList<>(List.of(
+                        "Calzado deportivo o de trekking",
+                        "Agua suficiente y vianda para el mediodía",
+                        "Protección solar y gorra"
+                )))
+                .safetyWarnings(new ArrayList<>(List.of(
+                        "Precaución al cruzar los vados en días de lluvia o crecida.",
+                        "Prohibido bañarse en el embalse por seguridad de conservación hídrica."
+                )))
                 .images(new ArrayList<>())
                 .build();
         List.of(
@@ -768,6 +819,7 @@ public class DataInitializer implements CommandLineRunner {
                 Attraction existing = existingOpt.get();
                 boolean hasUnsplash = existing.getImages() == null || existing.getImages().isEmpty() ||
                         existing.getImages().stream().anyMatch(img -> img.getUrl() != null && img.getUrl().contains("unsplash.com"));
+                boolean updated = false;
                 if (hasUnsplash) {
                     existing.getImages().clear();
                     for (AttractionImage img : a.getImages()) {
@@ -777,8 +829,31 @@ public class DataInitializer implements CommandLineRunner {
                                 .attraction(existing)
                                 .build());
                     }
+                    updated = true;
+                }
+                if (existing.getMaxElevationMsnm() == null && a.getMaxElevationMsnm() != null) {
+                    existing.setElevationGainMeters(a.getElevationGainMeters());
+                    existing.setMaxElevationMsnm(a.getMaxElevationMsnm());
+                    existing.setDistanceKm(a.getDistanceKm());
+                    existing.setTrailType(a.getTrailType());
+                    existing.setTerrainType(a.getTerrainType());
+                    existing.setOpeningHours(a.getOpeningHours());
+                    existing.setCutoffTime(a.getCutoffTime());
+                    existing.setHydrationRequirement(a.getHydrationRequirement());
+                    if (a.getHighlights() != null && (existing.getHighlights() == null || existing.getHighlights().isEmpty())) {
+                        existing.setHighlights(new ArrayList<>(a.getHighlights()));
+                    }
+                    if (a.getRecommendedGear() != null && (existing.getRecommendedGear() == null || existing.getRecommendedGear().isEmpty())) {
+                        existing.setRecommendedGear(new ArrayList<>(a.getRecommendedGear()));
+                    }
+                    if (a.getSafetyWarnings() != null && (existing.getSafetyWarnings() == null || existing.getSafetyWarnings().isEmpty())) {
+                        existing.setSafetyWarnings(new ArrayList<>(a.getSafetyWarnings()));
+                    }
+                    updated = true;
+                }
+                if (updated) {
                     attractionRepository.save(existing);
-                    log.info("✔ Atractivo existente actualizado con imágenes reales locales: {}", existing.getName());
+                    log.info("✔ Atractivo existente actualizado con datos técnicos e imágenes: {}", existing.getName());
                 }
             } else {
                 attractionRepository.save(a);
