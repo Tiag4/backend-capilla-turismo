@@ -7,11 +7,14 @@ import com.upc.demo.dto.calendar.CreateDateBlockDto;
 import com.upc.demo.dto.calendar.DateBlockResponseDto;
 import com.upc.demo.entidad.Accommodation;
 import com.upc.demo.entidad.DateBlock;
+import com.upc.demo.entidad.RoomType;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.DateBlockReason;
 import com.upc.demo.repositorio.AccommodationRepository;
+import com.upc.demo.repositorio.BookingItemRepository;
 import com.upc.demo.repositorio.BookingRepository;
 import com.upc.demo.repositorio.DateBlockRepository;
+import com.upc.demo.repositorio.RoomTypeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,13 +45,19 @@ class DateBlockServiceTest {
     @Mock
     private BookingRepository bookingRepository;
 
+    @Mock
+    private RoomTypeRepository roomTypeRepository;
+
+    @Mock
+    private BookingItemRepository bookingItemRepository;
+
     @InjectMocks
     private DateBlockService dateBlockService;
 
     private static final LocalDate TODAY = LocalDate.now();
 
     @Test
-    @DisplayName("create debe guardar el bloqueo cuando el rango está libre")
+    @DisplayName("create debe guardar el bloqueo global cuando el rango está libre")
     void create_freeRange_savesBlock() {
         UUID hostId = UUID.randomUUID();
         Accommodation accommodation = accommodation(hostId);
@@ -56,7 +65,7 @@ class DateBlockServiceTest {
 
         when(accommodationRepository.findById(accommodation.getId())).thenReturn(Optional.of(accommodation));
         when(bookingRepository.existsOverlappingBooking(any(), any(), any())).thenReturn(false);
-        when(dateBlockRepository.existsOverlappingBlock(any(), any(), any())).thenReturn(false);
+        when(dateBlockRepository.existsOverlappingGlobalBlock(any(), any(), any())).thenReturn(false);
         when(dateBlockRepository.save(any(DateBlock.class))).thenAnswer(invocation -> {
             DateBlock block = invocation.getArgument(0);
             block.setId(UUID.randomUUID());
@@ -89,18 +98,90 @@ class DateBlockServiceTest {
     }
 
     @Test
-    @DisplayName("create debe rechazar un rango superpuesto con otro bloqueo")
+    @DisplayName("create debe rechazar un rango superpuesto con otro bloqueo general")
     void create_withExistingBlock_throwsConflict() {
         UUID hostId = UUID.randomUUID();
         Accommodation accommodation = accommodation(hostId);
         when(accommodationRepository.findById(accommodation.getId())).thenReturn(Optional.of(accommodation));
         when(bookingRepository.existsOverlappingBooking(any(), any(), any())).thenReturn(false);
-        when(dateBlockRepository.existsOverlappingBlock(any(), any(), any())).thenReturn(true);
+        when(dateBlockRepository.existsOverlappingGlobalBlock(any(), any(), any())).thenReturn(true);
 
         assertThatThrownBy(() -> dateBlockService.create(
                 accommodation.getId(), dto(TODAY.plusDays(2), TODAY.plusDays(4)), hostId, false))
                 .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("bloqueo de fechas");
+                .hasMessageContaining("bloqueo general");
+    }
+
+    @Test
+    @DisplayName("create con roomTypeId debe guardar bloqueo específico de habitación")
+    void create_withRoomType_savesRoomSpecificBlock() {
+        UUID hostId = UUID.randomUUID();
+        Accommodation accommodation = accommodation(hostId);
+        UUID roomTypeId = UUID.randomUUID();
+        RoomType roomType = RoomType.builder()
+                .id(roomTypeId)
+                .name("Doble Serrano")
+                .totalUnits(4)
+                .accommodation(accommodation)
+                .build();
+
+        CreateDateBlockDto dto = CreateDateBlockDto.builder()
+                .startDate(TODAY.plusDays(5))
+                .endDate(TODAY.plusDays(10))
+                .roomTypeId(roomTypeId)
+                .unitsBlocked(1)
+                .notes("Mantenimiento baño")
+                .build();
+
+        when(accommodationRepository.findById(accommodation.getId())).thenReturn(Optional.of(accommodation));
+        when(roomTypeRepository.findById(roomTypeId)).thenReturn(Optional.of(roomType));
+        when(bookingItemRepository.sumBookedUnits(any(), any(), any())).thenReturn(1L);
+        when(dateBlockRepository.sumBlockedUnits(any(), any(), any())).thenReturn(0L);
+        when(dateBlockRepository.save(any(DateBlock.class))).thenAnswer(invocation -> {
+            DateBlock block = invocation.getArgument(0);
+            block.setId(UUID.randomUUID());
+            block.setCreatedAt(java.time.LocalDateTime.now());
+            return block;
+        });
+
+        DateBlockResponseDto response = dateBlockService.create(accommodation.getId(), dto, hostId, false);
+
+        assertThat(response.getRoomTypeId()).isEqualTo(roomTypeId);
+        assertThat(response.getRoomTypeName()).isEqualTo("Doble Serrano");
+        assertThat(response.getUnitsBlocked()).isEqualTo(1);
+        verify(dateBlockRepository).save(any(DateBlock.class));
+    }
+
+    @Test
+    @DisplayName("create con roomTypeId debe rechazar si supera el cupo total")
+    void create_withRoomType_whenExceedsTotalUnits_throwsConflict() {
+        UUID hostId = UUID.randomUUID();
+        Accommodation accommodation = accommodation(hostId);
+        UUID roomTypeId = UUID.randomUUID();
+        RoomType roomType = RoomType.builder()
+                .id(roomTypeId)
+                .name("Doble Serrano")
+                .totalUnits(2)
+                .accommodation(accommodation)
+                .build();
+
+        CreateDateBlockDto dto = CreateDateBlockDto.builder()
+                .startDate(TODAY.plusDays(5))
+                .endDate(TODAY.plusDays(10))
+                .roomTypeId(roomTypeId)
+                .unitsBlocked(2)
+                .build();
+
+        when(accommodationRepository.findById(accommodation.getId())).thenReturn(Optional.of(accommodation));
+        when(roomTypeRepository.findById(roomTypeId)).thenReturn(Optional.of(roomType));
+        when(bookingItemRepository.sumBookedUnits(any(), any(), any())).thenReturn(1L);
+        when(dateBlockRepository.sumBlockedUnits(any(), any(), any())).thenReturn(0L);
+
+        assertThatThrownBy(() -> dateBlockService.create(accommodation.getId(), dto, hostId, false))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("supera el cupo total");
+
+        verify(dateBlockRepository, never()).save(any(DateBlock.class));
     }
 
     @Test

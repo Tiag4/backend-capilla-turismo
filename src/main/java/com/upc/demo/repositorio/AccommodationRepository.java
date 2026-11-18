@@ -22,6 +22,9 @@ public interface AccommodationRepository extends JpaRepository<Accommodation, UU
            "  SELECT b.accommodation.id FROM Booking b " +
            "  WHERE b.status IN (com.upc.demo.entidad.enums.BookingStatus.PENDING, com.upc.demo.entidad.enums.BookingStatus.CONFIRMED) " +
            "  AND b.checkIn < :checkOut AND b.checkOut > :checkIn" +
+           ") AND a.id NOT IN (" +
+           "  SELECT db.accommodation.id FROM DateBlock db " +
+           "  WHERE db.roomType IS NULL AND db.startDate < :checkOut AND db.endDate > :checkIn" +
            ")")
     List<Accommodation> findAvailableAccommodations(
         @Param("checkIn") LocalDate checkIn,

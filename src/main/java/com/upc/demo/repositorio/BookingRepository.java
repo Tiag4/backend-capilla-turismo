@@ -46,4 +46,12 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         @Param("checkIn") LocalDate checkIn,
         @Param("checkOut") LocalDate checkOut
     );
+
+    @Query("SELECT b FROM Booking b WHERE b.accommodation.id = :accommodationId " +
+           "AND b.status IN (com.upc.demo.entidad.enums.BookingStatus.PENDING, com.upc.demo.entidad.enums.BookingStatus.CONFIRMED) " +
+           "AND b.checkOut >= :fromDate ORDER BY b.checkIn ASC")
+    List<Booking> findActiveBookingsByAccommodation(
+        @Param("accommodationId") UUID accommodationId,
+        @Param("fromDate") LocalDate fromDate
+    );
 }

@@ -6,6 +6,7 @@ import com.upc.demo.entidad.Alert;
 import com.upc.demo.entidad.Attraction;
 import com.upc.demo.entidad.AttractionImage;
 import com.upc.demo.entidad.Booking;
+import com.upc.demo.entidad.BookingItem;
 import com.upc.demo.entidad.Event;
 import com.upc.demo.entidad.HealthGuardNotice;
 import com.upc.demo.entidad.Pharmacy;
@@ -83,20 +84,31 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initAdmin() {
-        String adminEmail = "admin@capilladelmonte.gov.ar";
-        if (userRepository.findByEmail(adminEmail).isEmpty()) {
-            User admin = User.builder()
-                    .email(adminEmail)
-                    .password(passwordEncoder.encode("AdminCapilla2026!"))
-                    .name("Comisión Oficial")
-                    .lastName("Turismo Capilla")
-                    .role(Role.ADMIN)
-                    .phone("+54 3548 481123")
-                    .build();
+        String adminEmail = "camaraturismocapilla@gmail.com";
+        User admin = userRepository.findByEmail(adminEmail).orElseGet(() ->
+                userRepository.save(User.builder()
+                        .email(adminEmail)
+                        .password(passwordEncoder.encode("Demo1234!"))
+                        .name("Cámara de Turismo")
+                        .lastName("Capilla del Monte")
+                        .role(Role.ADMIN)
+                        .phone("+54 3548 481123")
+                        .isActive(true)
+                        .build())
+        );
+        admin.setName("Cámara de Turismo");
+        admin.setLastName("Capilla del Monte");
+        admin.setRole(Role.ADMIN);
+        admin.setPassword(passwordEncoder.encode("Demo1234!"));
+        admin.setIsActive(true);
+        userRepository.save(admin);
+        log.info("✔ Usuario ADMINISTRADOR inicial Cámara creado/sincronizado: {}", adminEmail);
 
-            userRepository.save(admin);
-            log.info("✔ Usuario ADMINISTRADOR inicial creado con éxito: {}", adminEmail);
-        }
+        String legacyAdminEmail = "admin@capilladelmonte.gov.ar";
+        userRepository.findByEmail(legacyAdminEmail).ifPresent(legacy -> {
+            legacy.setPassword(passwordEncoder.encode("Demo1234!"));
+            userRepository.save(legacy);
+        });
     }
 
     private void initHost() {
@@ -109,42 +121,48 @@ public class DataInitializer implements CommandLineRunner {
         });
 
         // ==========================================
-        // Host 1: Roberto Gómez - Cabañas El Aguaribay
+        // Host 1: Eduardo Solana - Cabañas El Aguaribay & Admin Cámara
         // ==========================================
-        String host1Email = "host@capilladelmonte.gov.ar";
+        String host1Email = "eduardodsolana@gmail.com";
         User host1 = userRepository.findByEmail(host1Email).orElseGet(() ->
                 userRepository.save(User.builder()
                         .email(host1Email)
-                        .password(passwordEncoder.encode("HostCapilla2026!"))
-                        .name("Roberto")
-                        .lastName("Gómez (Cabañas El Aguaribay)")
-                        .role(Role.HOST)
-                        .phone("+54 9 3548 481234")
+                        .password(passwordEncoder.encode("Demo1234!"))
+                        .name("Eduardo")
+                        .lastName("Solana")
+                        .role(Role.ADMIN)
+                        .phone("+54 9 3548 568548")
                         .isActive(true)
                         .build())
         );
-        host1.setName("Roberto");
-        host1.setLastName("Gómez (Cabañas El Aguaribay)");
+        host1.setName("Eduardo");
+        host1.setLastName("Solana");
+        host1.setRole(Role.ADMIN);
+        host1.setPhone("+54 9 3548 568548");
+        host1.setPassword(passwordEncoder.encode("Demo1234!"));
         host1.setIsActive(true);
         userRepository.save(host1);
 
-        Accommodation aguaribay = accommodationRepository.findByHostId(host1.getId()).stream()
+        Accommodation aguaribay = accommodationRepository.findAll().stream()
+                .filter(a -> "Cabañas El Aguaribay".equals(a.getName()))
                 .findFirst()
-                .orElseGet(() -> Accommodation.builder().host(host1).build());
+                .orElseGet(() -> accommodationRepository.findByHostId(host1.getId()).stream()
+                        .findFirst()
+                        .orElseGet(() -> Accommodation.builder().host(host1).build()));
 
         aguaribay.setName("Cabañas El Aguaribay");
-        aguaribay.setDescription("Cabaña serrana de tronco y piedra al pie de las sierras con parque autóctono privado.\n\nEl predio cuenta con piscina cercada con solárium, cocheras cubiertas, asadores individuales y vista abierta al Cerro Uritorco.\n\nAtención personalizada por sus dueños durante toda la estadía, con asesoramiento para excursiones y trekking.");
+        aguaribay.setDescription("Cabaña serrana de tronco y piedra al pie de las sierras con parque autóctono privado de 2.300 m² y cascada artificial.\n\nEl predio cuenta con piscina cercada con solárium y vistas panorámicas al Cerro Uritorco, cocheras cubiertas individuales, asadores y vajilla completa.\n\nAtención personalizada por su dueño Eduardo durante toda la estadía, en un entorno de paz y naturaleza.");
         aguaribay.setType(AccommodationType.CABIN);
-        aguaribay.setAddress("Calle Los Terrones 450");
+        aguaribay.setAddress("Av. Amadeo Sabattini 1214 (Camino al Cerro Uritorco)");
         aguaribay.setLocality("Capilla del Monte");
-        aguaribay.setLatitude(-30.8640);
-        aguaribay.setLongitude(-64.5310);
+        aguaribay.setLatitude(-30.8520);
+        aguaribay.setLongitude(-64.5240);
         aguaribay.setPricePerNight(BigDecimal.valueOf(85000.00));
         aguaribay.setMaxGuests(5);
-        aguaribay.setUnitTitle("Cabaña de Tronco y Piedra 2 Ambientes");
+        aguaribay.setUnitTitle("Cabaña de Tronco y Piedra con Parque y Piscina");
         aguaribay.setSurfaceSqm(60);
         aguaribay.setBedroomsSummary("Dormitorio 1: 1 cama matrimonial sommier | Dormitorio 2: 3 camas individuales");
-        aguaribay.setPhone("+54 9 3548 481234");
+        aguaribay.setPhone("+54 9 3548 568548");
         aguaribay.setCheckInTime("14:00 hs");
         aguaribay.setCheckOutTime("10:00 hs");
         aguaribay.setPetPolicy("Mascotas medianas y pequeñas bienvenidas con aviso previo en parque.");
@@ -152,10 +170,11 @@ public class DataInitializer implements CommandLineRunner {
         aguaribay.setCancellationPolicy("Cancelación flexible hasta 7 días antes de la fecha de ingreso.");
         aguaribay.setLicenseNumber("HAB-2024/089");
         aguaribay.setResponseTime("Responde habitualmente en menos de 1 hora");
+        aguaribay.setHostingSinceYear(2018);
         aguaribay.setHasBreakfast(false);
-        aguaribay.setAmenities(new ArrayList<>(Arrays.asList("Piscina", "Wi-Fi", "Asador individual", "Cochera techada", "Parque autóctono", "Aire acondicionado", "Cocina equipada")));
+        aguaribay.setAmenities(new ArrayList<>(Arrays.asList("Piscina", "Wi-Fi", "Asador individual", "Cochera techada", "Parque autóctono", "Cascada", "Aire acondicionado", "Cocina equipada")));
         aguaribay.setDownPaymentPercentage(50);
-        aguaribay.setBankAccountHolder("Roberto Gómez - Cabañas El Aguaribay");
+        aguaribay.setBankAccountHolder("Eduardo Solana - Cabañas El Aguaribay");
         aguaribay.setBankCbu("0110485530048500123456");
         aguaribay.setBankAlias("AGUARIBAY.CAPILLA.RIO");
         aguaribay.setBankName("Banco de la Nación Argentina");
@@ -170,7 +189,10 @@ public class DataInitializer implements CommandLineRunner {
                 "/images/accommodations/el-aguaribay/el-aguaribay-04.jpg",
                 "/images/accommodations/el-aguaribay/el-aguaribay-05.jpg",
                 "/images/accommodations/el-aguaribay/el-aguaribay-06.jpg",
-                "/images/accommodations/el-aguaribay/el-aguaribay-07.jpg"
+                "/images/accommodations/el-aguaribay/el-aguaribay-07.jpg",
+                "/images/accommodations/el-aguaribay/el-aguaribay-08.jpg",
+                "/images/accommodations/el-aguaribay/el-aguaribay-09.jpg",
+                "/images/accommodations/el-aguaribay/el-aguaribay-10.jpg"
         );
         for (int i = 0; i < aguaribayImgs.size(); i++) {
             aguaribay.getImages().add(AccommodationImage.builder()
@@ -181,31 +203,47 @@ public class DataInitializer implements CommandLineRunner {
                     .build());
         }
         accommodationRepository.save(aguaribay);
-        log.info("✔ Alojamiento 1 sincronizado: Cabañas El Aguaribay");
+        initRoomTypesForCabin(aguaribay);
+        log.info("✔ Alojamiento 1 sincronizado: Cabañas El Aguaribay (Host: Eduardo Solana)");
 
         // ==========================================
-        // Host 2: Esteban Morales - Cabañas Alpa Sierras
+        // Host 2: Martin Taszak - Cabañas Alpa Sierras & Admin Cámara
         // ==========================================
-        String host2Email = "host.alpasierras@capillaturismo.com.ar";
+        String host2Email = "martintaszak1@gmail.com";
         User host2 = userRepository.findByEmail(host2Email).orElseGet(() ->
                 userRepository.save(User.builder()
                         .email(host2Email)
-                        .password(passwordEncoder.encode("HostCapilla2026!"))
-                        .name("Esteban")
-                        .lastName("Morales (Cabañas Alpa Sierras)")
-                        .role(Role.HOST)
+                        .password(passwordEncoder.encode("Demo1234!"))
+                        .name("Martin")
+                        .lastName("Taszak")
+                        .role(Role.ADMIN)
                         .phone("+54 9 3548 591244")
                         .isActive(true)
                         .build())
         );
-        host2.setName("Esteban");
-        host2.setLastName("Morales (Cabañas Alpa Sierras)");
+        host2.setName("Martin");
+        host2.setLastName("Taszak");
+        host2.setRole(Role.ADMIN);
+        host2.setPhone("+54 9 3548 591244");
+        host2.setPassword(passwordEncoder.encode("Demo1234!"));
         host2.setIsActive(true);
         userRepository.save(host2);
 
-        Accommodation alpa = accommodationRepository.findByHostId(host2.getId()).stream()
+        // Migrar Cabañas Alpa Sierras a Martin si pertenecía al email legado
+        String legacyHost2Email = "host.alpasierras@capillaturismo.com.ar";
+        userRepository.findByEmail(legacyHost2Email).ifPresent(legacyHost -> {
+            accommodationRepository.findByHostId(legacyHost.getId()).forEach(acc -> {
+                acc.setHost(host2);
+                accommodationRepository.save(acc);
+            });
+        });
+
+        Accommodation alpa = accommodationRepository.findAll().stream()
+                .filter(a -> "Cabañas Alpa Sierras".equals(a.getName()))
                 .findFirst()
-                .orElseGet(() -> Accommodation.builder().host(host2).build());
+                .orElseGet(() -> accommodationRepository.findByHostId(host2.getId()).stream()
+                        .findFirst()
+                        .orElseGet(() -> Accommodation.builder().host(host2).build()));
 
         alpa.setName("Cabañas Alpa Sierras");
         alpa.setDescription("Chalet de montaña inmerso en la tranquilidad del Barrio Las Gemelas.\n\nConstrucción de excelente calidad con deck privado, piscina con vista abierta a las cumbres y asador techado.\n\nUn espacio pensado para el descanso profundo y la reconexión con la naturaleza serrana de Capilla del Monte.");
@@ -230,7 +268,7 @@ public class DataInitializer implements CommandLineRunner {
         alpa.setHasBreakfast(false);
         alpa.setAmenities(new ArrayList<>(Arrays.asList("Piscina con solárium", "Vista al Cerro Uritorco", "Wi-Fi alta velocidad", "Asador techado", "Cochera cubierta", "Calefacción tiro balanceado")));
         alpa.setDownPaymentPercentage(40);
-        alpa.setBankAccountHolder("Esteban Morales");
+        alpa.setBankAccountHolder("Martin Taszak");
         alpa.setBankCbu("0110234588000034567892");
         alpa.setBankAlias("ALPA.SIERRAS.CAPILLA");
         alpa.setBankName("Banco de la Nación Argentina");
@@ -301,6 +339,7 @@ public class DataInitializer implements CommandLineRunner {
         adrianita.setCancellationPolicy("Cancelación flexible hasta 48 horas antes de la llegada.");
         adrianita.setLicenseNumber("HAB-2022/056");
         adrianita.setResponseTime("Responde en menos de 30 minutos");
+        adrianita.setHostingSinceYear(2014);
         adrianita.setHasBreakfast(true);
         adrianita.setBreakfastType("Desayuno serrano casero");
         adrianita.setAmenities(new ArrayList<>(Arrays.asList("Desayuno incluido", "Wi-Fi", "Ubicación céntrica", "Recepción 24hs", "Aire acondicionado", "Baño privado", "Calefacción")));
@@ -579,6 +618,68 @@ public class DataInitializer implements CommandLineRunner {
         ratePlanRepository.saveAll(List.of(tarifaFlexible, desayunoIncluido));
 
         log.info("✔ Inventario multi-unidad sembrado para la Hostería Boutique Los Nogales (3 tipos de habitación)");
+    }
+
+    private void initRoomTypesForCabin(Accommodation cabin) {
+        if (roomTypeRepository.countByAccommodationId(cabin.getId()) > 0) {
+            return;
+        }
+
+        RoomType standardDoble = RoomType.builder()
+                .accommodation(cabin)
+                .name("Doble Serrano Standard")
+                .description("Cabaña estándar de tronco y piedra con sommier matrimonial y vista al parque.")
+                .baseCapacity(2)
+                .maxCapacity(2)
+                .beds(1)
+                .totalUnits(4)
+                .basePricePerNight(new BigDecimal("85000.00"))
+                .isActive(true)
+                .amenities(new ArrayList<>(Arrays.asList("Wi-Fi", "Aire acondicionado", "Piscina", "Asador individual")))
+                .ratePlans(new ArrayList<>())
+                .build();
+
+        RatePlan tarifaStandard = RatePlan.builder()
+                .roomType(standardDoble)
+                .name("Tarifa estándar")
+                .description("Cancelación flexible hasta 7 días antes de la llegada.")
+                .pricePerNight(new BigDecimal("85000.00"))
+                .includesBreakfast(false)
+                .freeCancellation(true)
+                .minNights(1)
+                .isActive(true)
+                .build();
+        standardDoble.getRatePlans().add(tarifaStandard);
+
+        RoomType superiorFamiliar = RoomType.builder()
+                .accommodation(cabin)
+                .name("Superior Familiar Vista al Cerro")
+                .description("Cabaña amplia de 2 ambientes con sommier King, camas individuales y vista panorámica al cerro.")
+                .baseCapacity(2)
+                .maxCapacity(4)
+                .beds(3)
+                .totalUnits(2)
+                .basePricePerNight(new BigDecimal("110500.00"))
+                .isActive(true)
+                .amenities(new ArrayList<>(Arrays.asList("Wi-Fi", "Aire acondicionado", "Piscina", "Asador individual", "Vista al cerro")))
+                .ratePlans(new ArrayList<>())
+                .build();
+
+        RatePlan tarifaFamiliar = RatePlan.builder()
+                .roomType(superiorFamiliar)
+                .name("Tarifa familiar")
+                .description("Cancelación flexible hasta 7 días antes.")
+                .pricePerNight(new BigDecimal("110500.00"))
+                .includesBreakfast(false)
+                .freeCancellation(true)
+                .minNights(1)
+                .isActive(true)
+                .build();
+        superiorFamiliar.getRatePlans().add(tarifaFamiliar);
+
+        roomTypeRepository.saveAll(List.of(standardDoble, superiorFamiliar));
+        ratePlanRepository.saveAll(List.of(tarifaStandard, tarifaFamiliar));
+        log.info("✔ Tipologías de cabaña inicializadas para: {}", cabin.getName());
     }
 
     private void initAttractions() {
@@ -1057,6 +1158,22 @@ public class DataInitializer implements CommandLineRunner {
                 .findFirst()
                 .orElse(cabin);
 
+        Accommodation adrianita = allAccommodations.stream()
+                .filter(a -> "Hostería Adrianita".equals(a.getName()))
+                .findFirst()
+                .orElse(hotel);
+
+        Accommodation alpaSierras = allAccommodations.stream()
+                .filter(a -> "Cabañas Alpa Sierras".equals(a.getName()))
+                .findFirst()
+                .orElse(cabin);
+
+        Accommodation casablanca = allAccommodations.stream()
+                .filter(a -> "Complejo Turístico Casablanca".equals(a.getName()))
+                .findFirst()
+                .orElse(cabin);
+
+        // 1. Reseñas para Cabañas El Aguaribay
         seedCompletedBookingWithReview(
                 cabin,
                 "CAP-2026-4812",
@@ -1067,7 +1184,7 @@ public class DataInitializer implements CommandLineRunner {
                 LocalDate.now().minusDays(45),
                 LocalDate.now().minusDays(42),
                 "Septiembre 2026",
-                5, 5, 5, 5,
+                5, 5, 5, 5, 5, 5, 5,
                 "Una experiencia hermosa al pie del Uritorco. La cabaña impecable, con todo lo necesario para cocinar y descansar. La pileta climatizada fue un diferencial enorme para disfrutar a la vuelta de las caminatas."
         );
 
@@ -1081,10 +1198,40 @@ public class DataInitializer implements CommandLineRunner {
                 LocalDate.now().minusDays(70),
                 LocalDate.now().minusDays(66),
                 "Agosto 2026",
-                5, 5, 5, 4,
+                5, 5, 5, 5, 5, 5, 4,
                 "Excelente atención de los dueños desde que llegamos. El predio es súper silencioso de noche, ideal para desconectar del ruido de la ciudad. El WiFi funcionó perfecto incluso para trabajar."
         );
 
+        // 2. Reseñas para Hostería Adrianita
+        seedCompletedBookingWithReview(
+                adrianita,
+                "CAP-2026-7201",
+                "Valentina Torres",
+                "valentina.torres@example.com",
+                "+54 9 11 38291044",
+                "Pilar, Buenos Aires",
+                LocalDate.now().minusDays(50),
+                LocalDate.now().minusDays(47),
+                "Septiembre 2026",
+                5, 5, 5, 5, 5, 5, 5,
+                "La atención de Adriana es maravillosa, te hace sentir como en casa desde el primer minuto. El desayuno serrano casero es inmejorable, con dulces regionales riquísimos y pan caliente. La ubicación en pleno centro permite caminar a todos lados."
+        );
+
+        seedCompletedBookingWithReview(
+                adrianita,
+                "CAP-2026-7202",
+                "Gonzalo Ríos",
+                "gonzalo.rios@example.com",
+                "+54 9 341 6291845",
+                "Rosario, Santa Fe",
+                LocalDate.now().minusDays(80),
+                LocalDate.now().minusDays(77),
+                "Agosto 2026",
+                5, 5, 5, 5, 5, 5, 4,
+                "Excelente relación precio-calidad. Las habitaciones súper limpias y calefaccionadas para las noches frescas. La tranquilidad del lugar y la cercanía a la plaza hacen que sea una opción ideal para descansar."
+        );
+
+        // 3. Reseñas para Hostería La Atalaya
         seedCompletedBookingWithReview(
                 hotel,
                 "CAP-2026-5102",
@@ -1095,15 +1242,67 @@ public class DataInitializer implements CommandLineRunner {
                 LocalDate.now().minusDays(35),
                 LocalDate.now().minusDays(32),
                 "Septiembre 2026",
-                5, 5, 5, 5,
+                5, 5, 5, 5, 5, 5, 5,
                 "La casona tiene un encanto histórico único y está conservada con muchísimo cariño. El desayuno serrano con pan casero y dulces regionales es espectacular."
         );
 
+        seedCompletedBookingWithReview(
+                hotel,
+                "CAP-2026-5103",
+                "Clara Benítez",
+                "clara.benitez@example.com",
+                "+54 9 342 5812903",
+                "Santa Fe",
+                LocalDate.now().minusDays(60),
+                LocalDate.now().minusDays(57),
+                "Agosto 2026",
+                5, 5, 5, 5, 5, 5, 5,
+                "Ubicación inmejorable en Barrio La Banda para moverse a pie por el sendero hacia El Zapato y el perilago. El deck panorámico al atardecer es una maravilla. Sin dudas volveremos."
+        );
+
+        // 4. Reseña para Cabañas Alpa Sierras
+        seedCompletedBookingWithReview(
+                alpaSierras,
+                "CAP-2026-6301",
+                "Sofía Pellegrini",
+                "sofia.pellegrini@example.com",
+                "+54 9 3541 498210",
+                "Villa Carlos Paz, Córdoba",
+                LocalDate.now().minusDays(40),
+                LocalDate.now().minusDays(37),
+                "Septiembre 2026",
+                5, 5, 5, 5, 5, 5, 5,
+                "La paz que hay en el predio es inigualable. La cabaña es espaciosa, con buena sombra de árboles autóctonos y el asador impecable. María siempre atenta a cualquier necesidad."
+        );
+
+        // 5. Reseña para Complejo Casablanca
+        seedCompletedBookingWithReview(
+                casablanca,
+                "CAP-2026-8401",
+                "Diego Mansilla",
+                "diego.mansilla@example.com",
+                "+54 9 351 7219843",
+                "Córdoba Capital",
+                LocalDate.now().minusDays(30),
+                LocalDate.now().minusDays(27),
+                "Octubre 2026",
+                5, 5, 5, 5, 5, 5, 4,
+                "El parque de 5.000 metros y la pileta olímpica son un lujo para ir con chicos. Cabaña completa, cómoda y segura. Todo funcionó a la perfección durante la estadía."
+        );
+
+        RoomType cabinStandard = roomTypeRepository.findByAccommodationIdOrderByNameAsc(cabin.getId()).stream()
+                .filter(rt -> rt.getName().toLowerCase().contains("standard") || rt.getName().toLowerCase().contains("doble"))
+                .findFirst().orElse(null);
+        RoomType cabinSuperior = roomTypeRepository.findByAccommodationIdOrderByNameAsc(cabin.getId()).stream()
+                .filter(rt -> rt.getName().toLowerCase().contains("superior") || rt.getName().toLowerCase().contains("familiar"))
+                .findFirst().orElse(null);
+
         // Reserva completada sin reseña previa para pruebas de envío real desde el portal
-        if (bookingRepository.findByBookingCode("CAP-2026-9901").isEmpty()) {
+        Booking pendingReviewBooking = bookingRepository.findByBookingCode("CAP-2026-9901").orElse(null);
+        if (pendingReviewBooking == null) {
             BigDecimal nightPrice = cabin.getPricePerNight() != null ? cabin.getPricePerNight() : BigDecimal.valueOf(85000.00);
             BigDecimal total = nightPrice.multiply(BigDecimal.valueOf(3));
-            Booking pendingReviewBooking = Booking.builder()
+            pendingReviewBooking = Booking.builder()
                     .bookingCode("CAP-2026-9901")
                     .checkIn(LocalDate.now().minusDays(15))
                     .checkOut(LocalDate.now().minusDays(12))
@@ -1120,16 +1319,43 @@ public class DataInitializer implements CommandLineRunner {
                     .guestPhone("+54 9 351 4567890")
                     .guestOrigin("Córdoba Capital")
                     .accommodation(cabin)
+                    .items(new ArrayList<>())
                     .build();
+            if (cabinSuperior != null) {
+                BookingItem item = BookingItem.builder()
+                        .booking(pendingReviewBooking)
+                        .roomType(cabinSuperior)
+                        .quantity(1)
+                        .guests(2)
+                        .pricePerNight(nightPrice)
+                        .subtotal(total)
+                        .build();
+                pendingReviewBooking.getItems().add(item);
+            }
             bookingRepository.save(pendingReviewBooking);
             log.info("✔ Reserva completada de prueba lista para reseñar: CAP-2026-9901");
+        } else if (cabinSuperior != null && (pendingReviewBooking.getItems() == null || pendingReviewBooking.getItems().isEmpty())) {
+            BookingItem item = BookingItem.builder()
+                    .booking(pendingReviewBooking)
+                    .roomType(cabinSuperior)
+                    .quantity(1)
+                    .guests(2)
+                    .pricePerNight(pendingReviewBooking.getPricePerNight())
+                    .subtotal(pendingReviewBooking.getTotalAmount())
+                    .build();
+            if (pendingReviewBooking.getItems() == null) {
+                pendingReviewBooking.setItems(new ArrayList<>());
+            }
+            pendingReviewBooking.getItems().add(item);
+            bookingRepository.save(pendingReviewBooking);
         }
 
         // Reserva PENDIENTE para pruebas de confirmacion / rechazo desde el dashboard del anfitrion
-        if (bookingRepository.findByBookingCode("CAP-2026-8801").isEmpty()) {
+        Booking pendingBooking = bookingRepository.findByBookingCode("CAP-2026-8801").orElse(null);
+        if (pendingBooking == null) {
             BigDecimal nightPrice = cabin.getPricePerNight() != null ? cabin.getPricePerNight() : BigDecimal.valueOf(85000.00);
             BigDecimal total = nightPrice.multiply(BigDecimal.valueOf(4));
-            Booking pendingBooking = Booking.builder()
+            pendingBooking = Booking.builder()
                     .bookingCode("CAP-2026-8801")
                     .checkIn(LocalDate.now().plusDays(10))
                     .checkOut(LocalDate.now().plusDays(14))
@@ -1147,9 +1373,35 @@ public class DataInitializer implements CommandLineRunner {
                     .guestOrigin("Buenos Aires")
                     .notes("Llegamos en micro cerca de las 15 hs.")
                     .accommodation(cabin)
+                    .items(new ArrayList<>())
                     .build();
+            if (cabinStandard != null) {
+                BookingItem item = BookingItem.builder()
+                        .booking(pendingBooking)
+                        .roomType(cabinStandard)
+                        .quantity(1)
+                        .guests(3)
+                        .pricePerNight(nightPrice)
+                        .subtotal(total)
+                        .build();
+                pendingBooking.getItems().add(item);
+            }
             bookingRepository.save(pendingBooking);
             log.info("✔ Reserva PENDIENTE de prueba creada con éxito: CAP-2026-8801");
+        } else if (cabinStandard != null && (pendingBooking.getItems() == null || pendingBooking.getItems().isEmpty())) {
+            BookingItem item = BookingItem.builder()
+                    .booking(pendingBooking)
+                    .roomType(cabinStandard)
+                    .quantity(1)
+                    .guests(3)
+                    .pricePerNight(pendingBooking.getPricePerNight())
+                    .subtotal(pendingBooking.getTotalAmount())
+                    .build();
+            if (pendingBooking.getItems() == null) {
+                pendingBooking.setItems(new ArrayList<>());
+            }
+            pendingBooking.getItems().add(item);
+            bookingRepository.save(pendingBooking);
         }
     }
 
@@ -1165,8 +1417,11 @@ public class DataInitializer implements CommandLineRunner {
             String stayDate,
             int rating,
             int cleanliness,
+            int accuracy,
+            int checkInRating,
             int hostRating,
             int locationRating,
+            int valueRating,
             String comment
     ) {
         Booking booking = bookingRepository.findByBookingCode(bookingCode).orElse(null);
@@ -1198,8 +1453,9 @@ public class DataInitializer implements CommandLineRunner {
             booking = bookingRepository.save(booking);
         }
 
-        if (!reviewRepository.existsByBookingCodeIgnoreCase(bookingCode)) {
-            Review review = Review.builder()
+        Review review = reviewRepository.findByBookingCodeIgnoreCase(bookingCode).orElse(null);
+        if (review == null) {
+            review = Review.builder()
                     .booking(booking)
                     .accommodation(accommodation)
                     .bookingCode(bookingCode)
@@ -1208,12 +1464,28 @@ public class DataInitializer implements CommandLineRunner {
                     .stayDate(stayDate)
                     .rating(rating)
                     .cleanlinessRating(cleanliness)
+                    .accuracyRating(accuracy)
+                    .checkInRating(checkInRating)
                     .hostRating(hostRating)
                     .locationRating(locationRating)
+                    .valueRating(valueRating)
                     .comment(comment)
                     .status(ReviewStatus.APPROVED)
                     .moderatedAt(LocalDateTime.now())
                     .build();
+            reviewRepository.save(review);
+        } else {
+            review.setRating(rating);
+            review.setCleanlinessRating(cleanliness);
+            review.setAccuracyRating(accuracy);
+            review.setCheckInRating(checkInRating);
+            review.setHostRating(hostRating);
+            review.setLocationRating(locationRating);
+            review.setValueRating(valueRating);
+            review.setStayDate(stayDate);
+            review.setGuestOrigin(guestOrigin);
+            review.setComment(comment);
+            review.setStatus(ReviewStatus.APPROVED);
             reviewRepository.save(review);
         }
     }

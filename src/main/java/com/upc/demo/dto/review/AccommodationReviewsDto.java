@@ -17,6 +17,9 @@ public class AccommodationReviewsDto {
     private Long totalReviews;
     private Double averageRating;
     private Double cleanlinessAverage;
+    private Double accuracyAverage;
+    private Double checkInAverage;
     private Double hostAverage;
     private Double locationAverage;
+    private Double valueAverage;
 }

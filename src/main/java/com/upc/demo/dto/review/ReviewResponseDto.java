@@ -25,8 +25,11 @@ public class ReviewResponseDto {
     private String stayDate;
     private Integer rating;
     private Integer cleanlinessRating;
+    private Integer accuracyRating;
+    private Integer checkInRating;
     private Integer hostRating;
     private Integer locationRating;
+    private Integer valueRating;
     private String comment;
     private ReviewStatus status;
     private String moderationNotes;

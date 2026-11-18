@@ -148,8 +148,11 @@ class ReviewServiceTest {
         assertThat(response.getTotalReviews()).isEqualTo(2);
         assertThat(response.getAverageRating()).isEqualTo(4.0);
         assertThat(response.getCleanlinessAverage()).isEqualTo(3.0);
+        assertThat(response.getAccuracyAverage()).isEqualTo(4.0);
+        assertThat(response.getCheckInAverage()).isEqualTo(4.5);
         assertThat(response.getHostAverage()).isEqualTo(4.0);
         assertThat(response.getLocationAverage()).isEqualTo(4.0);
+        assertThat(response.getValueAverage()).isEqualTo(4.0);
     }
 
     private CreateReviewDto buildCreateDto(String bookingCode) {
@@ -157,8 +160,11 @@ class ReviewServiceTest {
                 .bookingCode(bookingCode)
                 .rating(5)
                 .cleanlinessRating(4)
+                .accuracyRating(5)
+                .checkInRating(5)
                 .hostRating(5)
                 .locationRating(5)
+                .valueRating(4)
                 .comment("Una estadía excelente, con vistas hermosas y atención impecable.")
                 .build();
     }
@@ -186,8 +192,11 @@ class ReviewServiceTest {
                 .status(ReviewStatus.APPROVED)
                 .rating(rating)
                 .cleanlinessRating(cleanliness)
+                .accuracyRating(rating)
+                .checkInRating(rating == 5 ? 5 : 4)
                 .hostRating(host)
                 .locationRating(location)
+                .valueRating(rating)
                 .build();
     }
 }

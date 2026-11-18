@@ -21,4 +21,21 @@ public interface DateBlockRepository extends JpaRepository<DateBlock, UUID> {
         @Param("startDate") LocalDate startDate,
         @Param("endDate") LocalDate endDate
     );
+
+    @Query("SELECT COUNT(db) > 0 FROM DateBlock db WHERE db.accommodation.id = :accommodationId " +
+           "AND db.roomType IS NULL " +
+           "AND db.startDate < :endDate AND db.endDate > :startDate")
+    boolean existsOverlappingGlobalBlock(
+        @Param("accommodationId") UUID accommodationId,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate
+    );
+
+    @Query("SELECT COALESCE(SUM(db.unitsBlocked), 0) FROM DateBlock db WHERE db.roomType.id = :roomTypeId " +
+           "AND db.startDate < :endDate AND db.endDate > :startDate")
+    long sumBlockedUnits(
+        @Param("roomTypeId") UUID roomTypeId,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate
+    );
 }

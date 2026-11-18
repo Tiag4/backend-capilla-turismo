@@ -99,14 +99,18 @@ public class BookingService {
             throw new BadRequestException("La cantidad de huéspedes supera la capacidad máxima permitida (" + accommodation.getMaxGuests() + ")");
         }
 
-        // 6. Fórmula Anti-Solapamiento
+        // 6. Fórmula Anti-Solapamiento (considerando días de preparación del alojamiento)
+        int prepDays = accommodation.getPreparationDays() != null ? accommodation.getPreparationDays() : 0;
+        LocalDate effectiveCheckIn = prepDays > 0 ? dto.getCheckIn().minusDays(prepDays) : dto.getCheckIn();
+        LocalDate effectiveCheckOut = prepDays > 0 ? dto.getCheckOut().plusDays(prepDays) : dto.getCheckOut();
+
         boolean solapada = bookingRepository.existsOverlappingBooking(
                 dto.getAccommodationId(),
-                dto.getCheckIn(),
-                dto.getCheckOut()
+                effectiveCheckIn,
+                effectiveCheckOut
         );
         if (solapada) {
-            throw new ConflictException("El alojamiento ya posee una reserva en esas fechas");
+            throw new ConflictException("El alojamiento ya posee una reserva en esas fechas o en su período de preparación");
         }
 
         boolean bloqueada = dateBlockRepository.existsOverlappingBlock(
@@ -167,14 +171,14 @@ public class BookingService {
 
     private BookingResponseDto createMultiUnitBooking(CreateBookingDto dto, Accommodation accommodation,
                                                       int totalNights, UserPrincipal currentUser) {
-        // Un bloqueo de fechas afecta al alojamiento completo, igual que en el flujo legacy
-        boolean bloqueada = dateBlockRepository.existsOverlappingBlock(
+        // Un bloqueo general afecta al alojamiento completo (cierre general o fuera de temporada)
+        boolean bloqueadaGeneral = dateBlockRepository.existsOverlappingGlobalBlock(
                 accommodation.getId(),
                 dto.getCheckIn(),
                 dto.getCheckOut()
         );
-        if (bloqueada) {
-            throw new ConflictException("El alojamiento tiene fechas bloqueadas por mantenimiento o uso propio en ese rango");
+        if (bloqueadaGeneral) {
+            throw new ConflictException("El establecimiento posee un bloqueo general de fechas en ese rango");
         }
 
         List<CreateBookingItemDto> requestedItems = new ArrayList<>(dto.getItems());
@@ -199,6 +203,10 @@ public class BookingService {
         int totalGuests = 0;
         int totalRequestedUnits = 0;
 
+        int prepDays = accommodation.getPreparationDays() != null ? accommodation.getPreparationDays() : 0;
+        LocalDate effectiveCheckIn = prepDays > 0 ? dto.getCheckIn().minusDays(prepDays) : dto.getCheckIn();
+        LocalDate effectiveCheckOut = prepDays > 0 ? dto.getCheckOut().plusDays(prepDays) : dto.getCheckOut();
+
         for (CreateBookingItemDto item : requestedItems) {
             RoomType roomType = roomTypeRepository.findByIdForUpdate(item.getRoomTypeId())
                     .orElseThrow(() -> new ResourceNotFoundException(
@@ -213,14 +221,16 @@ public class BookingService {
             }
 
             long alreadyBooked = bookingItemRepository.sumBookedUnits(
-                    roomType.getId(), dto.getCheckIn(), dto.getCheckOut());
+                    roomType.getId(), effectiveCheckIn, effectiveCheckOut);
+            long manuallyBlocked = dateBlockRepository.sumBlockedUnits(
+                    roomType.getId(), effectiveCheckIn, effectiveCheckOut);
             int alreadyRequested = requestedUnitsByRoomType.getOrDefault(roomType.getId(), 0);
             int totalUnits = roomType.getTotalUnits() != null ? roomType.getTotalUnits() : 0;
-            int availableUnits = Math.max(0, totalUnits - (int) alreadyBooked - alreadyRequested);
+            int availableUnits = Math.max(0, totalUnits - (int) alreadyBooked - (int) manuallyBlocked - alreadyRequested);
 
             if (item.getQuantity() > availableUnits) {
                 throw new ConflictException("No hay disponibilidad suficiente para el tipo de habitación '"
-                        + roomType.getName() + "'");
+                        + roomType.getName() + "' (disponibles: " + availableUnits + ")");
             }
 
             int maxGuestsForItem = roomType.getMaxCapacity() * item.getQuantity();
@@ -343,14 +353,18 @@ public class BookingService {
 
         // Integridad transaccional: Si se va a confirmar, verificar que no exista otra confirmada solapada
         if (newStatus == BookingStatus.CONFIRMED && booking.getAccommodation() != null) {
+            int prepDays = booking.getAccommodation().getPreparationDays() != null ? booking.getAccommodation().getPreparationDays() : 0;
+            LocalDate effectiveCheckIn = prepDays > 0 ? booking.getCheckIn().minusDays(prepDays) : booking.getCheckIn();
+            LocalDate effectiveCheckOut = prepDays > 0 ? booking.getCheckOut().plusDays(prepDays) : booking.getCheckOut();
+
             boolean solapaConfirmada = bookingRepository.existsOverlappingConfirmedBooking(
                     booking.getAccommodation().getId(),
                     booking.getId(),
-                    booking.getCheckIn(),
-                    booking.getCheckOut()
+                    effectiveCheckIn,
+                    effectiveCheckOut
             );
             if (solapaConfirmada) {
-                throw new ConflictException("Ya existe otra reserva confirmada que se solapa con las fechas solicitadas");
+                throw new ConflictException("Ya existe otra reserva confirmada que se solapa con las fechas solicitadas (considerando el período de preparación)");
             }
         }
 

@@ -42,6 +42,8 @@ public class AccommodationResponseDto {
     private String cancellationPolicy;
     private String licenseNumber;
     private String responseTime;
+    private Integer hostingSinceYear;
+    private Integer preparationDays;
     private Boolean hasBreakfast;
     private String breakfastType;
     private List<String> amenities;
@@ -120,6 +122,8 @@ public class AccommodationResponseDto {
                 .cancellationPolicy(entity.getCancellationPolicy())
                 .licenseNumber(entity.getLicenseNumber())
                 .responseTime(entity.getResponseTime())
+                .hostingSinceYear(entity.getHostingSinceYear())
+                .preparationDays(entity.getPreparationDays())
                 .hasBreakfast(entity.getHasBreakfast() != null ? entity.getHasBreakfast() : false)
                 .breakfastType(entity.getBreakfastType())
                 .amenities(entity.getAmenities() != null ? new ArrayList<>(entity.getAmenities()) : new ArrayList<>())

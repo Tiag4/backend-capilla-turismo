@@ -4,6 +4,7 @@ import com.upc.demo.config.UserPrincipal;
 import com.upc.demo.dto.accommodation.AccommodationImageDto;
 import com.upc.demo.dto.accommodation.AccommodationResponseDto;
 import com.upc.demo.dto.accommodation.CreateAccommodationDto;
+import com.upc.demo.dto.accommodation.UnavailableDateRangeDto;
 import com.upc.demo.dto.accommodation.UpdateAccommodationDto;
 import com.upc.demo.entidad.enums.AccommodationType;
 import com.upc.demo.entidad.enums.Role;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -53,6 +55,13 @@ public class AccommodationController {
         return ResponseEntity.ok(accommodationService.getById(id));
     }
 
+    @GetMapping("/{id}/calendar-availability")
+    public ResponseEntity<List<UnavailableDateRangeDto>> getCalendarAvailability(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID roomTypeId) {
+        return ResponseEntity.ok(accommodationService.getCalendarAvailability(id, roomTypeId));
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
     public ResponseEntity<AccommodationResponseDto> createAccommodation(
@@ -76,6 +85,17 @@ public class AccommodationController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AccommodationResponseDto> toggleFeatured(@PathVariable UUID id) {
         return ResponseEntity.ok(accommodationService.toggleFeatured(id));
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
+    public ResponseEntity<AccommodationResponseDto> toggleStatus(
+            @PathVariable UUID id,
+            @RequestBody(required = false) Map<String, Boolean> body,
+            @AuthenticationPrincipal UserPrincipal user) {
+        boolean isAdmin = user.getRole() == Role.ADMIN;
+        Boolean explicitActive = (body != null && body.containsKey("isActive")) ? body.get("isActive") : null;
+        return ResponseEntity.ok(accommodationService.toggleStatus(id, explicitActive, user.getId(), isAdmin));
     }
 
     @DeleteMapping("/{id}")

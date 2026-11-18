@@ -128,7 +128,7 @@ public class EmailService {
         return switch (status) {
             case CONFIRMED -> "¡Tu reserva en " + accommodationName + " está confirmada!";
             case CANCELLED -> "Actualización de tu reserva " + booking.getBookingCode() + " — " + accommodationName;
-            case COMPLETED -> "¡Gracias por tu estadía en " + accommodationName + "!";
+            case COMPLETED -> "¡Gracias por tu estadía en " + accommodationName + "! Dejá tu reseña oficial";
             default -> "Tu reserva " + booking.getBookingCode() + " - Cámara de Turismo de Capilla del Monte";
         };
     }
@@ -169,7 +169,7 @@ public class EmailService {
             intro = switch (bookingStatus) {
                 case CONFIRMED -> "¡Excelentes noticias! Tu reserva en <strong>" + accommodationName + "</strong> está <strong>confirmada</strong>. Te compartimos el voucher oficial y los datos de contacto del establecimiento.";
                 case CANCELLED -> "Te informamos que tu reserva en <strong>" + accommodationName + "</strong> fue <strong>cancelada / declinada</strong>. Si seguís buscando estadía en Capilla del Monte, podés explorar otras opciones disponibles en el portal.";
-                case COMPLETED -> "Gracias por haber elegido <strong>" + accommodationName + "</strong> en Capilla del Monte. ¡Esperamos verte pronto!";
+                case COMPLETED -> "Esperamos que hayas disfrutado tu estadía en <strong>" + accommodationName + "</strong> al pie de las sierras. Tu opinión sobre la limpieza, veracidad, atención y comodidades es muy valiosa para futuros turistas de Capilla del Monte.";
                 default -> "Tu solicitud de reserva en <strong>" + accommodationName + "</strong> fue registrada correctamente.";
             };
         }
@@ -196,18 +196,27 @@ public class EmailService {
             guidanceText = switch (bookingStatus) {
                 case CONFIRMED -> "Presentá este voucher al ingresar (check-in a partir de las 14:00 hs / check-out hasta las 10:00 hs). El saldo restante se abona directamente en el establecimiento.";
                 case CANCELLED -> "Podés consultar otros alojamientos habilitados por la Secretaría de Turismo en nuestro portal oficial.";
+                case COMPLETED -> "Dejá tu reseña oficial haciendo clic en el botón inferior para calificar los 6 aspectos clave de tu estadía.";
                 default -> "Presentá este voucher al ingresar. El saldo restante se abona directamente en el establecimiento.";
             };
         }
 
         String cleanDashboardUrl = (dashboardBaseUrl != null ? dashboardBaseUrl : "http://localhost:5174").replaceAll("/+$", "");
         String cleanPortalUrl = (portalBaseUrl != null ? portalBaseUrl : "http://localhost:5173").replaceAll("/+$", "");
+        String reviewUrl = cleanPortalUrl + "/alojamientos/"
+                + (booking.getAccommodation() != null ? booking.getAccommodation().getId() : "")
+                + "?reviewBookingCode=" + booking.getBookingCode() + "#opiniones-huespedes";
+
         String actionLabel = forHost
                 ? "Gestionar en el Dashboard"
-                : (bookingStatus == BookingStatus.CANCELLED ? "Explorar alojamientos" : "Consultar mi voucher");
+                : (bookingStatus == BookingStatus.COMPLETED
+                    ? "Dejar mi reseña sobre la estadía"
+                    : (bookingStatus == BookingStatus.CANCELLED ? "Explorar alojamientos" : "Consultar mi voucher"));
         String actionUrl = forHost
                 ? cleanDashboardUrl
-                : (bookingStatus == BookingStatus.CANCELLED ? cleanPortalUrl + "/alojamientos" : voucherUrl);
+                : (bookingStatus == BookingStatus.COMPLETED
+                    ? reviewUrl
+                    : (bookingStatus == BookingStatus.CANCELLED ? cleanPortalUrl + "/alojamientos" : voucherUrl));
 
         return "<!doctype html>"
                 + "<html lang=\"es\"><head><meta charset=\"utf-8\">"

@@ -55,11 +55,23 @@ public class Review {
     @Column(name = "cleanliness_rating", nullable = false)
     private Integer cleanlinessRating;
 
+    @Column(name = "accuracy_rating")
+    @Builder.Default
+    private Integer accuracyRating = 5;
+
+    @Column(name = "check_in_rating")
+    @Builder.Default
+    private Integer checkInRating = 5;
+
     @Column(name = "host_rating", nullable = false)
     private Integer hostRating;
 
     @Column(name = "location_rating", nullable = false)
     private Integer locationRating;
+
+    @Column(name = "value_rating")
+    @Builder.Default
+    private Integer valueRating = 5;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String comment;
@@ -84,5 +96,26 @@ public class Review {
         if (this.status == null) {
             this.status = ReviewStatus.PENDING;
         }
+        if (this.accuracyRating == null) {
+            this.accuracyRating = this.rating != null ? this.rating : 5;
+        }
+        if (this.checkInRating == null) {
+            this.checkInRating = this.rating != null ? this.rating : 5;
+        }
+        if (this.valueRating == null) {
+            this.valueRating = this.rating != null ? this.rating : 5;
+        }
+    }
+
+    public Integer getAccuracyRating() {
+        return this.accuracyRating != null ? this.accuracyRating : (this.rating != null ? this.rating : 5);
+    }
+
+    public Integer getCheckInRating() {
+        return this.checkInRating != null ? this.checkInRating : (this.rating != null ? this.rating : 5);
+    }
+
+    public Integer getValueRating() {
+        return this.valueRating != null ? this.valueRating : (this.rating != null ? this.rating : 5);
     }
 }
