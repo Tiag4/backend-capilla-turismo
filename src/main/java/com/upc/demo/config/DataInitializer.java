@@ -84,20 +84,31 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initAdmin() {
-        String adminEmail = "admin@capilladelmonte.gov.ar";
-        if (userRepository.findByEmail(adminEmail).isEmpty()) {
-            User admin = User.builder()
-                    .email(adminEmail)
-                    .password(passwordEncoder.encode("AdminCapilla2026!"))
-                    .name("Comisión Oficial")
-                    .lastName("Turismo Capilla")
-                    .role(Role.ADMIN)
-                    .phone("+54 3548 481123")
-                    .build();
+        String adminEmail = "camaraturismocapilla@gmail.com";
+        User admin = userRepository.findByEmail(adminEmail).orElseGet(() ->
+                userRepository.save(User.builder()
+                        .email(adminEmail)
+                        .password(passwordEncoder.encode("Demo1234!"))
+                        .name("Cámara de Turismo")
+                        .lastName("Capilla del Monte")
+                        .role(Role.ADMIN)
+                        .phone("+54 3548 481123")
+                        .isActive(true)
+                        .build())
+        );
+        admin.setName("Cámara de Turismo");
+        admin.setLastName("Capilla del Monte");
+        admin.setRole(Role.ADMIN);
+        admin.setPassword(passwordEncoder.encode("Demo1234!"));
+        admin.setIsActive(true);
+        userRepository.save(admin);
+        log.info("✔ Usuario ADMINISTRADOR inicial Cámara creado/sincronizado: {}", adminEmail);
 
-            userRepository.save(admin);
-            log.info("✔ Usuario ADMINISTRADOR inicial creado con éxito: {}", adminEmail);
-        }
+        String legacyAdminEmail = "admin@capilladelmonte.gov.ar";
+        userRepository.findByEmail(legacyAdminEmail).ifPresent(legacy -> {
+            legacy.setPassword(passwordEncoder.encode("Demo1234!"));
+            userRepository.save(legacy);
+        });
     }
 
     private void initHost() {
@@ -110,7 +121,7 @@ public class DataInitializer implements CommandLineRunner {
         });
 
         // ==========================================
-        // Host 1: Eduardo Solana - Cabañas El Aguaribay
+        // Host 1: Eduardo Solana - Cabañas El Aguaribay & Admin Cámara
         // ==========================================
         String host1Email = "eduardodsolana@gmail.com";
         User host1 = userRepository.findByEmail(host1Email).orElseGet(() ->
@@ -118,14 +129,15 @@ public class DataInitializer implements CommandLineRunner {
                         .email(host1Email)
                         .password(passwordEncoder.encode("Demo1234!"))
                         .name("Eduardo")
-                        .lastName("Solana (Cabañas El Aguaribay)")
-                        .role(Role.HOST)
+                        .lastName("Solana")
+                        .role(Role.ADMIN)
                         .phone("+54 9 3548 568548")
                         .isActive(true)
                         .build())
         );
         host1.setName("Eduardo");
-        host1.setLastName("Solana (Cabañas El Aguaribay)");
+        host1.setLastName("Solana");
+        host1.setRole(Role.ADMIN);
         host1.setPhone("+54 9 3548 568548");
         host1.setPassword(passwordEncoder.encode("Demo1234!"));
         host1.setIsActive(true);
@@ -194,28 +206,43 @@ public class DataInitializer implements CommandLineRunner {
         log.info("✔ Alojamiento 1 sincronizado: Cabañas El Aguaribay (Host: Eduardo Solana)");
 
         // ==========================================
-        // Host 2: Esteban Morales - Cabañas Alpa Sierras
+        // Host 2: Martin Taszak - Cabañas Alpa Sierras & Admin Cámara
         // ==========================================
-        String host2Email = "host.alpasierras@capillaturismo.com.ar";
+        String host2Email = "martintaszak1@gmail.com";
         User host2 = userRepository.findByEmail(host2Email).orElseGet(() ->
                 userRepository.save(User.builder()
                         .email(host2Email)
-                        .password(passwordEncoder.encode("HostCapilla2026!"))
-                        .name("Esteban")
-                        .lastName("Morales (Cabañas Alpa Sierras)")
-                        .role(Role.HOST)
+                        .password(passwordEncoder.encode("Demo1234!"))
+                        .name("Martin")
+                        .lastName("Taszak")
+                        .role(Role.ADMIN)
                         .phone("+54 9 3548 591244")
                         .isActive(true)
                         .build())
         );
-        host2.setName("Esteban");
-        host2.setLastName("Morales (Cabañas Alpa Sierras)");
+        host2.setName("Martin");
+        host2.setLastName("Taszak");
+        host2.setRole(Role.ADMIN);
+        host2.setPhone("+54 9 3548 591244");
+        host2.setPassword(passwordEncoder.encode("Demo1234!"));
         host2.setIsActive(true);
         userRepository.save(host2);
 
-        Accommodation alpa = accommodationRepository.findByHostId(host2.getId()).stream()
+        // Migrar Cabañas Alpa Sierras a Martin si pertenecía al email legado
+        String legacyHost2Email = "host.alpasierras@capillaturismo.com.ar";
+        userRepository.findByEmail(legacyHost2Email).ifPresent(legacyHost -> {
+            accommodationRepository.findByHostId(legacyHost.getId()).forEach(acc -> {
+                acc.setHost(host2);
+                accommodationRepository.save(acc);
+            });
+        });
+
+        Accommodation alpa = accommodationRepository.findAll().stream()
+                .filter(a -> "Cabañas Alpa Sierras".equals(a.getName()))
                 .findFirst()
-                .orElseGet(() -> Accommodation.builder().host(host2).build());
+                .orElseGet(() -> accommodationRepository.findByHostId(host2.getId()).stream()
+                        .findFirst()
+                        .orElseGet(() -> Accommodation.builder().host(host2).build()));
 
         alpa.setName("Cabañas Alpa Sierras");
         alpa.setDescription("Chalet de montaña inmerso en la tranquilidad del Barrio Las Gemelas.\n\nConstrucción de excelente calidad con deck privado, piscina con vista abierta a las cumbres y asador techado.\n\nUn espacio pensado para el descanso profundo y la reconexión con la naturaleza serrana de Capilla del Monte.");
@@ -239,7 +266,7 @@ public class DataInitializer implements CommandLineRunner {
         alpa.setHasBreakfast(false);
         alpa.setAmenities(new ArrayList<>(Arrays.asList("Piscina con solárium", "Vista al Cerro Uritorco", "Wi-Fi alta velocidad", "Asador techado", "Cochera cubierta", "Calefacción tiro balanceado")));
         alpa.setDownPaymentPercentage(40);
-        alpa.setBankAccountHolder("Esteban Morales");
+        alpa.setBankAccountHolder("Martin Taszak");
         alpa.setBankCbu("0110234588000034567892");
         alpa.setBankAlias("ALPA.SIERRAS.CAPILLA");
         alpa.setBankName("Banco de la Nación Argentina");
