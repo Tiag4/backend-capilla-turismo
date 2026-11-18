@@ -83,6 +83,9 @@ public class Accommodation {
     @Column(name = "response_time", length = 60)
     private String responseTime;
 
+    @Column(name = "hosting_since_year")
+    private Integer hostingSinceYear;
+
     @Column(name = "preparation_days")
     @Builder.Default
     private Integer preparationDays = 0;

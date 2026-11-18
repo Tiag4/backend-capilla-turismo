@@ -67,8 +67,11 @@ public class ReviewService {
                 .stayDate(resolveStayDate(dto.getStayDate(), booking))
                 .rating(dto.getRating())
                 .cleanlinessRating(dto.getCleanlinessRating())
+                .accuracyRating(dto.getAccuracyRating())
+                .checkInRating(dto.getCheckInRating())
                 .hostRating(dto.getHostRating())
                 .locationRating(dto.getLocationRating())
+                .valueRating(dto.getValueRating())
                 .comment(dto.getComment().trim())
                 .status(ReviewStatus.PENDING)
                 .build();
@@ -128,8 +131,11 @@ public class ReviewService {
                 .totalReviews((long) reviews.size())
                 .averageRating(roundOneDecimal(reviews.stream().mapToInt(Review::getRating).average().orElse(0)))
                 .cleanlinessAverage(roundOneDecimal(reviews.stream().mapToInt(Review::getCleanlinessRating).average().orElse(0)))
+                .accuracyAverage(roundOneDecimal(reviews.stream().mapToInt(Review::getAccuracyRating).average().orElse(0)))
+                .checkInAverage(roundOneDecimal(reviews.stream().mapToInt(Review::getCheckInRating).average().orElse(0)))
                 .hostAverage(roundOneDecimal(reviews.stream().mapToInt(Review::getHostRating).average().orElse(0)))
                 .locationAverage(roundOneDecimal(reviews.stream().mapToInt(Review::getLocationRating).average().orElse(0)))
+                .valueAverage(roundOneDecimal(reviews.stream().mapToInt(Review::getValueRating).average().orElse(0)))
                 .build();
     }
 
@@ -203,8 +209,11 @@ public class ReviewService {
                 .stayDate(review.getStayDate())
                 .rating(review.getRating())
                 .cleanlinessRating(review.getCleanlinessRating())
+                .accuracyRating(review.getAccuracyRating())
+                .checkInRating(review.getCheckInRating())
                 .hostRating(review.getHostRating())
                 .locationRating(review.getLocationRating())
+                .valueRating(review.getValueRating())
                 .comment(review.getComment())
                 .status(review.getStatus())
                 .moderationNotes(review.getModerationNotes())

@@ -72,6 +72,10 @@ public class UpdateAccommodationDto {
     @Size(max = 60, message = "El tiempo de respuesta no puede exceder 60 caracteres")
     private String responseTime;
 
+    @Min(value = 1950, message = "El año de inicio de actividad debe ser mayor o igual a 1950")
+    @Max(value = 2100, message = "El año de inicio de actividad no es válido")
+    private Integer hostingSinceYear;
+
     @Min(value = 0, message = "El tiempo de preparación no puede ser negativo")
     @Max(value = 7, message = "El tiempo de preparación no puede exceder 7 días")
     private Integer preparationDays;

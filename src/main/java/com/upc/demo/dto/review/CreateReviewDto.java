@@ -29,6 +29,14 @@ public class CreateReviewDto {
     @Max(value = 5, message = "La calificación de limpieza debe ser entre 1 y 5")
     private Integer cleanlinessRating;
 
+    @Min(value = 1, message = "La calificación de veracidad debe ser entre 1 y 5")
+    @Max(value = 5, message = "La calificación de veracidad debe ser entre 1 y 5")
+    private Integer accuracyRating;
+
+    @Min(value = 1, message = "La calificación de llegada/check-in debe ser entre 1 y 5")
+    @Max(value = 5, message = "La calificación de llegada/check-in debe ser entre 1 y 5")
+    private Integer checkInRating;
+
     @NotNull(message = "La calificación del anfitrión es obligatoria")
     @Min(value = 1, message = "La calificación del anfitrión debe ser entre 1 y 5")
     @Max(value = 5, message = "La calificación del anfitrión debe ser entre 1 y 5")
@@ -39,6 +47,10 @@ public class CreateReviewDto {
     @Max(value = 5, message = "La calificación de ubicación debe ser entre 1 y 5")
     private Integer locationRating;
 
+    @Min(value = 1, message = "La calificación de relación calidad-precio debe ser entre 1 y 5")
+    @Max(value = 5, message = "La calificación de relación calidad-precio debe ser entre 1 y 5")
+    private Integer valueRating;
+
     @NotBlank(message = "El comentario es obligatorio")
     @Size(min = 20, max = 2000, message = "El comentario debe tener entre 20 y 2000 caracteres")
     private String comment;
@@ -48,4 +60,16 @@ public class CreateReviewDto {
 
     @Size(max = 60, message = "La fecha de estadía no puede superar los 60 caracteres")
     private String stayDate;
+
+    public Integer getAccuracyRating() {
+        return accuracyRating != null ? accuracyRating : (rating != null ? rating : 5);
+    }
+
+    public Integer getCheckInRating() {
+        return checkInRating != null ? checkInRating : (rating != null ? rating : 5);
+    }
+
+    public Integer getValueRating() {
+        return valueRating != null ? valueRating : (rating != null ? rating : 5);
+    }
 }

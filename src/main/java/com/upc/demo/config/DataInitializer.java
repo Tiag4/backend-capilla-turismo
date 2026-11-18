@@ -110,52 +110,57 @@ public class DataInitializer implements CommandLineRunner {
         });
 
         // ==========================================
-        // Host 1: Roberto Gómez - Cabañas El Aguaribay
+        // Host 1: Eduardo Solana - Cabañas El Aguaribay
         // ==========================================
-        String host1Email = "host@capilladelmonte.gov.ar";
+        String host1Email = "eduardodsolana@gmail.com";
         User host1 = userRepository.findByEmail(host1Email).orElseGet(() ->
                 userRepository.save(User.builder()
                         .email(host1Email)
                         .password(passwordEncoder.encode("HostCapilla2026!"))
-                        .name("Roberto")
-                        .lastName("Gómez (Cabañas El Aguaribay)")
+                        .name("Eduardo")
+                        .lastName("Solana (Cabañas El Aguaribay)")
                         .role(Role.HOST)
-                        .phone("+54 9 3548 481234")
+                        .phone("+54 9 3548 568548")
                         .isActive(true)
                         .build())
         );
-        host1.setName("Roberto");
-        host1.setLastName("Gómez (Cabañas El Aguaribay)");
+        host1.setName("Eduardo");
+        host1.setLastName("Solana (Cabañas El Aguaribay)");
+        host1.setPhone("+54 9 3548 568548");
         host1.setIsActive(true);
         userRepository.save(host1);
 
-        Accommodation aguaribay = accommodationRepository.findByHostId(host1.getId()).stream()
+        Accommodation aguaribay = accommodationRepository.findAll().stream()
+                .filter(a -> "Cabañas El Aguaribay".equals(a.getName()))
                 .findFirst()
-                .orElseGet(() -> Accommodation.builder().host(host1).build());
+                .orElseGet(() -> accommodationRepository.findByHostId(host1.getId()).stream()
+                        .findFirst()
+                        .orElseGet(() -> Accommodation.builder().host(host1).build()));
 
         aguaribay.setName("Cabañas El Aguaribay");
-        aguaribay.setDescription("Cabaña serrana de tronco y piedra al pie de las sierras con parque autóctono privado.\n\nEl predio cuenta con piscina cercada con solárium, cocheras cubiertas, asadores individuales y vista abierta al Cerro Uritorco.\n\nAtención personalizada por sus dueños durante toda la estadía, con asesoramiento para excursiones y trekking.");
+        aguaribay.setDescription("Cabaña serrana de tronco y piedra al pie de las sierras con parque autóctono privado de 2.300 m² y cascada artificial.\n\nEl predio cuenta con piscina cercada con solárium y vistas panorámicas al Cerro Uritorco, cocheras cubiertas individuales, asadores y vajilla completa.\n\nAtención personalizada por su dueño Eduardo durante toda la estadía, en un entorno de paz y naturaleza.");
         aguaribay.setType(AccommodationType.CABIN);
-        aguaribay.setAddress("Calle Los Terrones 450");
+        aguaribay.setAddress("Av. Amadeo Sabattini 1214 (Camino al Cerro Uritorco)");
         aguaribay.setLocality("Capilla del Monte");
-        aguaribay.setLatitude(-30.8640);
-        aguaribay.setLongitude(-64.5310);
+        aguaribay.setLatitude(-30.8520);
+        aguaribay.setLongitude(-64.5240);
         aguaribay.setPricePerNight(BigDecimal.valueOf(85000.00));
         aguaribay.setMaxGuests(5);
-        aguaribay.setUnitTitle("Cabaña de Tronco y Piedra 2 Ambientes");
+        aguaribay.setUnitTitle("Cabaña de Tronco y Piedra con Parque y Piscina");
         aguaribay.setSurfaceSqm(60);
         aguaribay.setBedroomsSummary("Dormitorio 1: 1 cama matrimonial sommier | Dormitorio 2: 3 camas individuales");
-        aguaribay.setPhone("+54 9 3548 481234");
+        aguaribay.setPhone("+54 9 3548 568548");
         aguaribay.setCheckInTime("14:00 hs");
         aguaribay.setCheckOutTime("10:00 hs");
         aguaribay.setPetPolicy("Mascotas medianas y pequeñas bienvenidas con aviso previo en parque.");
         aguaribay.setCancellationPolicy("Cancelación flexible hasta 7 días antes de la fecha de ingreso.");
         aguaribay.setLicenseNumber("HAB-2024/089");
         aguaribay.setResponseTime("Responde habitualmente en menos de 1 hora");
+        aguaribay.setHostingSinceYear(2018);
         aguaribay.setHasBreakfast(false);
-        aguaribay.setAmenities(new ArrayList<>(Arrays.asList("Piscina", "Wi-Fi", "Asador individual", "Cochera techada", "Parque autóctono", "Aire acondicionado", "Cocina equipada")));
+        aguaribay.setAmenities(new ArrayList<>(Arrays.asList("Piscina", "Wi-Fi", "Asador individual", "Cochera techada", "Parque autóctono", "Cascada", "Aire acondicionado", "Cocina equipada")));
         aguaribay.setDownPaymentPercentage(50);
-        aguaribay.setBankAccountHolder("Roberto Gómez - Cabañas El Aguaribay");
+        aguaribay.setBankAccountHolder("Eduardo Solana - Cabañas El Aguaribay");
         aguaribay.setBankCbu("0110485530048500123456");
         aguaribay.setBankAlias("AGUARIBAY.CAPILLA.RIO");
         aguaribay.setBankName("Banco de la Nación Argentina");
@@ -170,7 +175,10 @@ public class DataInitializer implements CommandLineRunner {
                 "/images/accommodations/el-aguaribay/el-aguaribay-04.jpg",
                 "/images/accommodations/el-aguaribay/el-aguaribay-05.jpg",
                 "/images/accommodations/el-aguaribay/el-aguaribay-06.jpg",
-                "/images/accommodations/el-aguaribay/el-aguaribay-07.jpg"
+                "/images/accommodations/el-aguaribay/el-aguaribay-07.jpg",
+                "/images/accommodations/el-aguaribay/el-aguaribay-08.jpg",
+                "/images/accommodations/el-aguaribay/el-aguaribay-09.jpg",
+                "/images/accommodations/el-aguaribay/el-aguaribay-10.jpg"
         );
         for (int i = 0; i < aguaribayImgs.size(); i++) {
             aguaribay.getImages().add(AccommodationImage.builder()
@@ -182,7 +190,7 @@ public class DataInitializer implements CommandLineRunner {
         }
         accommodationRepository.save(aguaribay);
         initRoomTypesForCabin(aguaribay);
-        log.info("✔ Alojamiento 1 sincronizado: Cabañas El Aguaribay");
+        log.info("✔ Alojamiento 1 sincronizado: Cabañas El Aguaribay (Host: Eduardo Solana)");
 
         // ==========================================
         // Host 2: Esteban Morales - Cabañas Alpa Sierras
@@ -301,6 +309,7 @@ public class DataInitializer implements CommandLineRunner {
         adrianita.setCancellationPolicy("Cancelación flexible hasta 48 horas antes de la llegada.");
         adrianita.setLicenseNumber("HAB-2022/056");
         adrianita.setResponseTime("Responde en menos de 30 minutos");
+        adrianita.setHostingSinceYear(2014);
         adrianita.setHasBreakfast(true);
         adrianita.setBreakfastType("Desayuno serrano casero");
         adrianita.setAmenities(new ArrayList<>(Arrays.asList("Desayuno incluido", "Wi-Fi", "Ubicación céntrica", "Recepción 24hs", "Aire acondicionado", "Baño privado", "Calefacción")));
