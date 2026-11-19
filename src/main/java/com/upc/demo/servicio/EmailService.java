@@ -1,5 +1,6 @@
 package com.upc.demo.servicio;
 
+import com.upc.demo.entidad.Accommodation;
 import com.upc.demo.entidad.Booking;
 import com.upc.demo.entidad.User;
 import com.upc.demo.entidad.enums.BookingStatus;
@@ -218,30 +219,65 @@ public class EmailService {
                     ? reviewUrl
                     : (bookingStatus == BookingStatus.CANCELLED ? cleanPortalUrl + "/alojamientos" : voucherUrl));
 
+        String statusBadgeBg = switch (bookingStatus) {
+            case CONFIRMED -> "#1c8b68";
+            case COMPLETED -> "#0d2f22";
+            case CANCELLED -> "#b91c1c";
+            default -> "#c95627";
+        };
+
+        Accommodation acc = booking.getAccommodation();
+        String bankHolder = acc != null && acc.getBankAccountHolder() != null ? escapeHtml(acc.getBankAccountHolder()) : "";
+        String bankCbu = acc != null && acc.getBankCbu() != null ? escapeHtml(acc.getBankCbu()) : "";
+        String bankAlias = acc != null && acc.getBankAlias() != null ? escapeHtml(acc.getBankAlias()) : "";
+        String bankName = acc != null && acc.getBankName() != null ? escapeHtml(acc.getBankName()) : "";
+
+        String bankBlock = (!forHost && (!bankCbu.isEmpty() || !bankAlias.isEmpty()))
+                ? "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"background:#ffffff;border:1px solid #e6e2d8;border-radius:12px;margin-bottom:20px;overflow:hidden;\">"
+                    + "<tr><td style=\"background:#faf8f5;padding:12px 18px;border-bottom:1px solid #e6e2d8;\">"
+                    + "<span style=\"color:#6b665c;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;\">Datos Bancarios para Transferencia de la Seña</span>"
+                    + "</td></tr>"
+                    + "<tr><td style=\"padding:14px 18px;font-size:13px;line-height:1.6;\">"
+                    + (bankHolder.isEmpty() ? "" : "<div><span style=\"color:#8c877a;\">Titular:</span> <strong>" + bankHolder + "</strong></div>")
+                    + (bankName.isEmpty() ? "" : "<div><span style=\"color:#8c877a;\">Entidad:</span> <strong>" + bankName + "</strong></div>")
+                    + (bankCbu.isEmpty() ? "" : "<div style=\"margin-top:4px;\"><span style=\"color:#8c877a;\">CBU/CVU:</span> <code style=\"font-family:Courier,monospace;background:#faf8f5;padding:2px 6px;border-radius:4px;border:1px solid #e6e2d8;font-size:12px;color:#1a1a1a;font-weight:700;\">" + bankCbu + "</code></div>")
+                    + (bankAlias.isEmpty() ? "" : "<div style=\"margin-top:4px;\"><span style=\"color:#8c877a;\">Alias:</span> <code style=\"font-family:Courier,monospace;background:#faf8f5;padding:2px 6px;border-radius:4px;border:1px solid #e6e2d8;font-size:12px;color:#c95627;font-weight:700;\">" + bankAlias + "</code></div>")
+                    + "<p style=\"margin:8px 0 0;font-size:11px;color:#8c877a;font-style:italic;\">Una vez realizada la transferencia, enviá el comprobante al anfitrión por WhatsApp para registrar el pago.</p>"
+                    + "</td></tr></table>"
+                : "";
+
         return "<!doctype html>"
                 + "<html lang=\"es\"><head><meta charset=\"utf-8\">"
                 + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
                 + "<title>" + escapeHtml(headerTitle) + "</title></head>"
-                + "<body style=\"margin:0;padding:0;background:#f4f0e8;font-family:Arial,Helvetica,sans-serif;color:#22201e;\">"
+                + "<body style=\"margin:0;padding:0;background:#f4f0e8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#22201e;\">"
                 + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"background:#f4f0e8;padding:24px 12px;\">"
                 + "<tr><td align=\"center\">"
-                + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:620px;background:#ffffff;border:1px solid #ded8cb;border-radius:18px;overflow:hidden;\">"
-                + "<tr><td style=\"background:#e06d39;padding:22px 28px;\">"
-                + "<span style=\"display:block;color:#ffffff;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;\">Cámara de Turismo de Capilla del Monte</span>"
-                + "<span style=\"display:block;color:#ffffff;font-size:22px;font-weight:800;margin-top:6px;\">" + escapeHtml(headerTitle) + "</span>"
+                + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:600px;background:#ffffff;border:1px solid #ded8cb;border-radius:18px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.04);\">"
+                + "<tr><td style=\"background:#0d2f22;padding:22px 28px;border-bottom:3px solid #e06d39;\">"
+                + "<span style=\"display:block;color:#749b3f;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px;\">Cámara de Turismo de Capilla del Monte</span>"
+                + "<span style=\"display:block;color:#ffffff;font-size:20px;font-weight:800;line-height:1.2;\">" + escapeHtml(headerTitle) + "</span>"
+                + "<span style=\"display:block;color:#d6e7c0;font-size:12px;margin-top:4px;\">Portal Oficial de Turismo · Capilla del Monte, Córdoba</span>"
                 + "</td></tr>"
-                + "<tr><td style=\"padding:26px 28px;\">"
-                + "<p style=\"margin:0 0 14px;font-size:15px;line-height:1.6;\">" + intro + "</p>"
-                + "<div style=\"display:inline-block;background:#faf8f5;border:1px dashed #bcbaa9;border-radius:12px;padding:12px 18px;margin-bottom:20px;\">"
-                + "<span style=\"display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#8c877a;font-weight:700;\">Código de reserva</span>"
-                + "<span style=\"display:block;font-size:22px;font-weight:800;color:#c95627;letter-spacing:1px;\">" + escapeHtml(booking.getBookingCode()) + "</span>"
-                + "<span style=\"display:block;font-size:11px;color:#6b665c;\">Estado: " + status + "</span>"
-                + "</div>"
-                + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"font-size:14px;border-top:1px solid #ece8df;border-bottom:1px solid #ece8df;margin-bottom:18px;\">"
-                + row("Ingreso", booking.getCheckIn().format(DATE_FORMATTER))
-                + row("Egreso", booking.getCheckOut().format(DATE_FORMATTER))
-                + row("Noches", String.valueOf(booking.getTotalNights()))
-                + row("Huéspedes", String.valueOf(booking.getGuestCount()))
+                + "<tr><td style=\"padding:28px 28px 24px 28px;\">"
+                + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"background:#faf8f5;border:1px solid #e6e2d8;border-radius:14px;margin-bottom:20px;\">"
+                + "<tr><td style=\"padding:16px 20px;\">"
+                + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\"><tr>"
+                + "<td valign=\"middle\">"
+                + "<span style=\"display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#6b665c;font-weight:700;\">Localizador Oficial</span>"
+                + "<span style=\"display:block;font-size:24px;font-weight:800;color:#c95627;letter-spacing:1px;font-family:Courier,monospace;line-height:1.2;margin-top:2px;\">" + escapeHtml(booking.getBookingCode()) + "</span>"
+                + "</td>"
+                + "<td valign=\"middle\" align=\"right\">"
+                + "<div style=\"display:inline-block;background:" + statusBadgeBg + ";color:#ffffff;font-size:11px;font-weight:700;padding:6px 14px;border-radius:8px;text-transform:uppercase;\">" + status + "</div>"
+                + "</td>"
+                + "</tr></table>"
+                + "</td></tr></table>"
+                + "<p style=\"margin:0 0 16px;font-size:15px;line-height:1.6;\">" + intro + "</p>"
+                + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"font-size:13px;border-top:1px solid #ece8df;border-bottom:1px solid #ece8df;margin-bottom:18px;\">"
+                + row("Ingreso (Check-in)", booking.getCheckIn().format(DATE_FORMATTER) + " <span style=\"font-weight:400;color:#8c877a;\">(a partir de 14:00 hs)</span>")
+                + row("Egreso (Check-out)", booking.getCheckOut().format(DATE_FORMATTER) + " <span style=\"font-weight:400;color:#8c877a;\">(hasta 10:00 hs)</span>")
+                + row("Noches", String.valueOf(booking.getTotalNights()) + " noches")
+                + row("Huéspedes", String.valueOf(booking.getGuestCount()) + " personas")
                 + guestBlock
                 + hostContactBlock
                 + row("Alojamiento", accommodationName + "<br><span style=\"font-weight:400;color:#6b665c;\">" + address + " · " + locality + "</span>")
@@ -249,16 +285,21 @@ public class EmailService {
                 + "</table>"
                 + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"background:#faf8f5;border:1px solid #ece8df;border-radius:12px;padding:14px 18px;margin-bottom:20px;font-size:14px;\">"
                 + row("Total de la estadía", formatMoney(booking.getTotalAmount()))
-                + row("Seña requerida (" + booking.getDownPaymentPercentage() + "%)", formatMoney(booking.getDownPaymentAmount()))
+                + row("Seña requerida (" + booking.getDownPaymentPercentage() + "%)", "<span style=\"color:#c95627;\">" + formatMoney(booking.getDownPaymentAmount()) + "</span>")
                 + row("Saldo restante", formatMoney(booking.getRemainingBalance()))
                 + "</table>"
+                + bankBlock
                 + "<p style=\"margin:0 0 18px;font-size:13px;color:#6b665c;line-height:1.6;\">" + guidanceText + "</p>"
-                + "<a href=\"" + actionUrl + "\" style=\"display:inline-block;background:#22201e;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 22px;border-radius:10px;\">"
+                + "<div style=\"text-align:center;margin-bottom:16px;\">"
+                + "<a href=\"" + actionUrl + "\" style=\"display:inline-block;background:#e06d39;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:13px 26px;border-radius:10px;box-shadow:0 3px 10px rgba(224,109,57,0.25);\">"
                 + actionLabel + "</a>"
+                + "</div>"
                 + "</td></tr>"
-                + "<tr><td style=\"background:#0d2f22;padding:16px 28px;color:#d6e7c0;font-size:11px;line-height:1.5;\">"
-                + "Cámara de Turismo de Capilla del Monte · Córdoba, Argentina<br>"
-                + "Este es un mensaje automático, no respondas a esta dirección."
+                + "<tr><td style=\"background:#0d2f22;padding:20px 28px;color:#d6e7c0;font-size:11px;line-height:1.6;border-top:1px solid #1c8b68;\">"
+                + "<strong style=\"color:#ffffff;font-size:12px;display:block;margin-bottom:3px;\">Cámara de Turismo de Capilla del Monte</strong>"
+                + "Córdoba, Argentina · Portal Oficial de Promoción y Reservas<br>"
+                + "<span style=\"color:#a4c28d;font-size:10px;display:block;margin-top:4px;\">Desarrollado en articulación académica por la Universidad Provincial de Córdoba (Sede Capilla del Monte).</span>"
+                + "<span style=\"color:#749b3f;font-size:10px;display:block;margin-top:6px;\">Este es un mensaje institucional automático. Para consultas o asistencia, comunicate directamente con el prestador o la oficina de turismo local.</span>"
                 + "</td></tr>"
                 + "</table></td></tr></table></body></html>";
     }
