@@ -389,6 +389,35 @@ public class AccommodationService {
     }
 
     @Transactional
+    public AccommodationImageDto setMainImage(UUID id, UUID imageId, UUID hostId, boolean isAdmin) {
+        Accommodation accommodation = findAccommodationById(id);
+        validateOwnership(accommodation, hostId, isAdmin);
+
+        AccommodationImage target = accommodationImageRepository.findByIdAndAccommodationId(imageId, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Imagen no encontrada con ID: " + imageId + " para el alojamiento especificado"));
+
+        if (accommodation.getImages() != null) {
+            for (AccommodationImage existingImg : accommodation.getImages()) {
+                boolean shouldBeMain = existingImg.getId().equals(imageId);
+                if (!Boolean.valueOf(shouldBeMain).equals(existingImg.getIsMain())) {
+                    existingImg.setIsMain(shouldBeMain);
+                    accommodationImageRepository.save(existingImg);
+                }
+            }
+        }
+        target.setIsMain(true);
+        return AccommodationImageDto.fromEntity(accommodationImageRepository.save(target));
+    }
+
+    @Transactional
+    public AccommodationResponseDto saveAuditData(UUID id, String auditDataJson) {
+        Accommodation accommodation = findAccommodationById(id);
+        accommodation.setAuditDataJson(auditDataJson);
+        Accommodation updated = accommodationRepository.save(accommodation);
+        return AccommodationResponseDto.fromEntity(updated);
+    }
+
+    @Transactional
     public AccommodationResponseDto toggleFeatured(UUID id) {
         Accommodation accommodation = findAccommodationById(id);
         accommodation.setIsFeatured(!Boolean.TRUE.equals(accommodation.getIsFeatured()));

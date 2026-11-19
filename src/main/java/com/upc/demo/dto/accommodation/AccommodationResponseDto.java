@@ -60,6 +60,7 @@ public class AccommodationResponseDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String inventoryMode;
+    private String auditDataJson;
 
     @Builder.Default
     private List<RoomTypeResponseDto> roomTypes = new ArrayList<>();
@@ -140,6 +141,7 @@ public class AccommodationResponseDto {
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .inventoryMode(derivedMode)
+                .auditDataJson(entity.getAuditDataJson())
                 .roomTypes(roomTypeDtos)
                 .images(imageDtos)
                 .build();
