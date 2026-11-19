@@ -291,8 +291,8 @@ public class EmailService {
                 + bankBlock
                 + "<p style=\"margin:0 0 18px;font-size:13px;color:#6b665c;line-height:1.6;\">" + guidanceText + "</p>"
                 + "<div style=\"text-align:center;margin-bottom:16px;\">"
-                + "<a href=\"" + actionUrl + "\" style=\"display:inline-block;background:#e06d39;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:13px 26px;border-radius:10px;box-shadow:0 3px 10px rgba(224,109,57,0.25);\">"
-                + actionLabel + "</a>"
+                + "<a href=\"" + actionUrl + "\" style=\"display:inline-block;background:#22201e;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;padding:12px 24px;border-radius:6px;letter-spacing:0.3px;\">"
+                + actionLabel + " &rarr;</a>"
                 + "</div>"
                 + "</td></tr>"
                 + "<tr><td style=\"background:#0d2f22;padding:20px 28px;color:#d6e7c0;font-size:11px;line-height:1.6;border-top:1px solid #1c8b68;\">"
