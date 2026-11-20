@@ -129,4 +129,22 @@ public class AccommodationController {
         accommodationService.deleteImage(id, imageId, user.getId(), isAdmin);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{id}/images/{imageId}/main")
+    @PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
+    public ResponseEntity<AccommodationImageDto> setMainImage(
+            @PathVariable UUID id,
+            @PathVariable UUID imageId,
+            @AuthenticationPrincipal UserPrincipal user) {
+        boolean isAdmin = user.getRole() == Role.ADMIN;
+        return ResponseEntity.ok(accommodationService.setMainImage(id, imageId, user.getId(), isAdmin));
+    }
+
+    @PatchMapping("/{id}/audit")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AccommodationResponseDto> saveAuditData(
+            @PathVariable UUID id,
+            @RequestBody String auditDataJson) {
+        return ResponseEntity.ok(accommodationService.saveAuditData(id, auditDataJson));
+    }
 }

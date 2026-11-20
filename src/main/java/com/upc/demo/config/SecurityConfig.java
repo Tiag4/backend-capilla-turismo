@@ -118,6 +118,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/emergency-sanitary/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/seasons/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/mobility/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/portal-config/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/circuits/**").permitAll()
                         
                         // Reservas: creacion y consulta publica (lookup)
                         .requestMatchers(HttpMethod.POST, "/api/v1/bookings").permitAll()

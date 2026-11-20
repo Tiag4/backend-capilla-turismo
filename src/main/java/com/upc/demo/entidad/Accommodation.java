@@ -124,6 +124,9 @@ public class Accommodation {
     @Column(name = "bank_alias", length = 60)
     private String bankAlias;
 
+    @Column(name = "audit_data_json", columnDefinition = "TEXT")
+    private String auditDataJson;
+
     @Column(name = "bank_name", length = 100)
     private String bankName;
 
