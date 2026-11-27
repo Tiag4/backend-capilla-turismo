@@ -133,13 +133,39 @@ public class AttractionService {
 
 
     @Transactional(readOnly = true)
-
     public AttractionResponseDto getById(UUID id) {
-
         Attraction attraction = findAttractionById(id);
-
         return AttractionResponseDto.fromEntity(attraction);
+    }
 
+    @Transactional(readOnly = true)
+    public AttractionResponseDto getByIdOrSlug(String idOrSlug) {
+        if (idOrSlug == null || idOrSlug.isBlank()) {
+            throw new ResourceNotFoundException("Identificador o slug de atractivo no proporcionado");
+        }
+        try {
+            UUID id = UUID.fromString(idOrSlug.trim());
+            return getById(id);
+        } catch (IllegalArgumentException ex) {
+            String slug = idOrSlug.trim();
+            String normalizedSearch = slug.replace("-", " ").toLowerCase();
+            return attractionRepository.findAll().stream()
+                    .filter(a -> toSlug(a.getName()).equalsIgnoreCase(slug) ||
+                            a.getName().toLowerCase().contains(normalizedSearch) ||
+                            normalizedSearch.contains(a.getName().toLowerCase()))
+                    .findFirst()
+                    .map(AttractionResponseDto::fromEntity)
+                    .orElseThrow(() -> new ResourceNotFoundException("Atractivo turístico no encontrado con slug o identificador: " + slug));
+        }
+    }
+
+    private String toSlug(String input) {
+        if (input == null) return "";
+        return java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                .toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-+|-+$", "");
     }
 
 
