@@ -78,4 +78,51 @@ class AttractionServiceTest {
         verify(storageService, times(1)).delete("attractions/img_2");
         verify(attractionRepository, times(1)).delete(attraction);
     }
+
+    @Test
+    @DisplayName("getByIdOrSlug debe resolver atractivos por UUID válido")
+    void getByIdOrSlug_withValidUuid_returnsAttraction() {
+        UUID attractionId = UUID.randomUUID();
+        Attraction attraction = Attraction.builder()
+                .id(attractionId)
+                .name("Cerro Uritorco")
+                .build();
+
+        when(attractionRepository.findById(attractionId)).thenReturn(Optional.of(attraction));
+
+        var response = attractionService.getByIdOrSlug(attractionId.toString());
+
+        org.junit.jupiter.api.Assertions.assertNotNull(response);
+        org.junit.jupiter.api.Assertions.assertEquals(attractionId, response.getId());
+        org.junit.jupiter.api.Assertions.assertEquals("Cerro Uritorco", response.getName());
+    }
+
+    @Test
+    @DisplayName("getByIdOrSlug debe resolver atractivos por slug legible")
+    void getByIdOrSlug_withSlug_returnsAttraction() {
+        UUID attractionId = UUID.randomUUID();
+        Attraction attraction = Attraction.builder()
+                .id(attractionId)
+                .name("Cerro Uritorco")
+                .build();
+
+        when(attractionRepository.findAll()).thenReturn(List.of(attraction));
+
+        var response = attractionService.getByIdOrSlug("cerro-uritorco");
+
+        org.junit.jupiter.api.Assertions.assertNotNull(response);
+        org.junit.jupiter.api.Assertions.assertEquals(attractionId, response.getId());
+        org.junit.jupiter.api.Assertions.assertEquals("Cerro Uritorco", response.getName());
+    }
+
+    @Test
+    @DisplayName("getByIdOrSlug debe arrojar ResourceNotFoundException si el slug no coincide")
+    void getByIdOrSlug_notFound_throwsException() {
+        when(attractionRepository.findAll()).thenReturn(List.of());
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                com.upc.demo.config.exception.ResourceNotFoundException.class,
+                () -> attractionService.getByIdOrSlug("paseo-inexistente")
+        );
+    }
 }
