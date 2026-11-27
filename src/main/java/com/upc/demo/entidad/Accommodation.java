@@ -1,0 +1,175 @@
+package com.upc.demo.entidad;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.upc.demo.entidad.enums.AccommodationType;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Entity
+@Table(name = "accommodations")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Accommodation {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(nullable = false, length = 150)
+    private String name;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    @Builder.Default
+    private AccommodationType type = AccommodationType.CABIN;
+
+    @Column(nullable = false, length = 200)
+    private String address;
+
+    @Column(nullable = false, length = 100)
+    @Builder.Default
+    private String locality = "Capilla del Monte";
+
+    private Double latitude;
+    private Double longitude;
+
+    @Column(name = "price_per_night", nullable = false, precision = 10, scale = 2)
+    private BigDecimal pricePerNight;
+
+    @Column(name = "max_guests", nullable = false)
+    private Integer maxGuests;
+
+    @Column(name = "unit_title", length = 150)
+    private String unitTitle;
+
+    @Column(name = "surface_sqm")
+    private Integer surfaceSqm;
+
+    @Column(name = "bedrooms_summary", length = 300)
+    private String bedroomsSummary;
+
+    @Column(length = 30)
+    private String phone;
+
+    @Column(name = "check_in_time", length = 20)
+    @Builder.Default
+    private String checkInTime = "14:00 hs";
+
+    @Column(name = "check_out_time", length = 20)
+    @Builder.Default
+    private String checkOutTime = "10:00 hs";
+
+    @Column(name = "pet_policy", length = 250)
+    private String petPolicy;
+
+    @Column(name = "cancellation_policy", length = 300)
+    private String cancellationPolicy;
+
+    @Column(name = "license_number", length = 60)
+    private String licenseNumber;
+
+    @Column(name = "response_time", length = 60)
+    private String responseTime;
+
+    @Column(name = "hosting_since_year")
+    private Integer hostingSinceYear;
+
+    @Column(name = "preparation_days")
+    @Builder.Default
+    private Integer preparationDays = 0;
+
+    @ElementCollection
+    @CollectionTable(name = "accommodation_amenities", joinColumns = @JoinColumn(name = "accommodation_id"))
+    @Column(name = "amenity")
+    @Builder.Default
+    private List<String> amenities = new ArrayList<>();
+
+    @Column(name = "has_breakfast", nullable = false)
+    @Builder.Default
+    private Boolean hasBreakfast = false;
+
+    @Column(name = "breakfast_type", length = 150)
+    private String breakfastType;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
+
+    @Column(name = "is_featured", nullable = false)
+    @Builder.Default
+    private Boolean isFeatured = false;
+
+    @Column(name = "down_payment_percentage")
+    @Builder.Default
+    private Integer downPaymentPercentage = 50;
+
+    @Column(name = "bank_account_holder", length = 150)
+    private String bankAccountHolder;
+
+    @Column(name = "bank_cbu", length = 30)
+    private String bankCbu;
+
+    @Column(name = "bank_alias", length = 60)
+    private String bankAlias;
+
+    @Column(name = "audit_data_json", columnDefinition = "TEXT")
+    private String auditDataJson;
+
+    @Column(name = "bank_name", length = 100)
+    private String bankName;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "host_id", nullable = false)
+    private User host;
+
+    @OneToMany(mappedBy = "accommodation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<AccommodationImage> images = new ArrayList<>();
+
+    @OneToMany(mappedBy = "accommodation")
+    @JsonIgnore
+    @Builder.Default
+    private List<Booking> bookings = new ArrayList<>();
+
+    @OneToMany(mappedBy = "accommodation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @Builder.Default
+    private List<RoomType> roomTypes = new ArrayList<>();
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public Integer getDownPaymentPercentage() {
+        return this.downPaymentPercentage != null ? this.downPaymentPercentage : 50;
+    }
+
+    public Integer getPreparationDays() {
+        return this.preparationDays != null ? this.preparationDays : 0;
+    }
+}
