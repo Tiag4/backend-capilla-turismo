@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -41,7 +42,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @Service
@@ -56,6 +56,11 @@ public class BookingService {
     private final RoomTypeRepository roomTypeRepository;
     private final RatePlanRepository ratePlanRepository;
     private final BookingItemRepository bookingItemRepository;
+
+    private static final String BOOKING_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+    private static final int BOOKING_CODE_ENTROPY_LENGTH = 8;
+    private static final int MAX_CODE_GENERATION_ATTEMPTS = 5;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     @Transactional
     public BookingResponseDto createBooking(CreateBookingDto dto, UserPrincipal currentUser) {
@@ -122,7 +127,7 @@ public class BookingService {
             throw new ConflictException("El alojamiento tiene fechas bloqueadas por mantenimiento o uso propio en ese rango");
         }
 
-        // 7. Generación de Código Idempotente: CAP-<AÑO>-<4_DIGITOS_ALEATORIOS>
+        // 7. Cryptographically Secure Booking Code Generation: CAP-<YEAR>-<8_BASE32_CHARS>
         String bookingCode = generateUniqueBookingCode();
 
         // 8. Cálculo de importe y seña
@@ -532,14 +537,20 @@ public class BookingService {
         return mapToResponseDto(booking);
     }
 
-    private String generateUniqueBookingCode() {
+    protected String generateUniqueBookingCode() {
         int year = LocalDate.now().getYear();
-        String code;
-        do {
-            int randomDigits = ThreadLocalRandom.current().nextInt(1000, 10000);
-            code = String.format("CAP-%d-%04d", year, randomDigits);
-        } while (bookingRepository.findByBookingCode(code).isPresent());
-        return code;
+        for (int attempt = 0; attempt < MAX_CODE_GENERATION_ATTEMPTS; attempt++) {
+            StringBuilder sb = new StringBuilder(BOOKING_CODE_ENTROPY_LENGTH);
+            for (int i = 0; i < BOOKING_CODE_ENTROPY_LENGTH; i++) {
+                int randomIndex = secureRandom.nextInt(BOOKING_CODE_ALPHABET.length());
+                sb.append(BOOKING_CODE_ALPHABET.charAt(randomIndex));
+            }
+            String code = String.format("CAP-%d-%s", year, sb.toString());
+            if (bookingRepository.findByBookingCode(code).isEmpty()) {
+                return code;
+            }
+        }
+        throw new ConflictException("No fue posible generar un código único de reserva tras múltiples intentos");
     }
 
     public BookingResponseDto mapToResponseDto(Booking booking) {
