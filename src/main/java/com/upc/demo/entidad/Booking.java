@@ -51,6 +51,15 @@ public class Booking {
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "promo_code", length = 50)
+    private String promoCode;
+
+    @Column(name = "discount_amount", precision = 10, scale = 2)
+    private BigDecimal discountAmount;
+
+    @Column(name = "subtotal_amount", precision = 10, scale = 2)
+    private BigDecimal subtotalAmount;
+
     @Column(name = "down_payment_percentage")
     private Integer downPaymentPercentage;
 

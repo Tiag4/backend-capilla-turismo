@@ -30,6 +30,9 @@ public class BookingResponseDto {
     private Integer guestCount;
     private BigDecimal pricePerNight;
     private BigDecimal totalAmount;
+    private String promoCode;
+    private BigDecimal discountAmount;
+    private BigDecimal subtotalAmount;
     private Integer downPaymentPercentage;
     private BigDecimal downPaymentAmount;
     private BigDecimal remainingBalance;

@@ -37,8 +37,12 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import com.upc.demo.entidad.enums.ReviewStatus;
+import com.upc.demo.repositorio.ReviewRepository;
 
 @Slf4j
 @Service
@@ -53,6 +57,7 @@ public class AccommodationService {
     private final DateBlockRepository dateBlockRepository;
     private final RoomTypeRepository roomTypeRepository;
     private final BookingItemRepository bookingItemRepository;
+    private final ReviewRepository reviewRepository;
 
     @Transactional(readOnly = true)
     public List<AccommodationResponseDto> getAll(AccommodationType type,
@@ -112,9 +117,11 @@ public class AccommodationService {
                     .collect(Collectors.toList());
         }
 
-        return accommodations.stream()
+        List<AccommodationResponseDto> dtos = accommodations.stream()
                 .map(a -> AccommodationResponseDto.fromEntity(a, true))
                 .collect(Collectors.toList());
+        populateReviewStats(dtos);
+        return dtos;
     }
 
     @Transactional(readOnly = true)
@@ -125,23 +132,57 @@ public class AccommodationService {
     @Transactional(readOnly = true)
     public AccommodationResponseDto getById(UUID id) {
         Accommodation accommodation = findAccommodationById(id);
-        return AccommodationResponseDto.fromEntity(accommodation, true);
+        AccommodationResponseDto dto = AccommodationResponseDto.fromEntity(accommodation, true);
+        Double avg = reviewRepository.findAverageRatingByAccommodationIdAndStatus(id, ReviewStatus.APPROVED);
+        Long count = reviewRepository.countByAccommodationIdAndStatus(id, ReviewStatus.APPROVED);
+        dto.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : null);
+        dto.setReviewCount(count != null ? count.intValue() : 0);
+        return dto;
     }
 
     @Transactional(readOnly = true)
     public List<AccommodationResponseDto> getMyAccommodations(UUID hostId) {
-        return accommodationRepository.findByHostId(hostId)
+        List<AccommodationResponseDto> dtos = accommodationRepository.findByHostId(hostId)
                 .stream()
                 .map(AccommodationResponseDto::fromEntity)
                 .collect(Collectors.toList());
+        populateReviewStats(dtos);
+        return dtos;
     }
 
     @Transactional(readOnly = true)
     public List<AccommodationResponseDto> getByHostId(UUID hostId) {
-        return accommodationRepository.findByHostId(hostId)
+        List<AccommodationResponseDto> dtos = accommodationRepository.findByHostId(hostId)
                 .stream()
                 .map(AccommodationResponseDto::fromEntity)
                 .collect(Collectors.toList());
+        populateReviewStats(dtos);
+        return dtos;
+    }
+
+    private void populateReviewStats(List<AccommodationResponseDto> dtos) {
+        if (dtos == null || dtos.isEmpty()) {
+            return;
+        }
+        List<Object[]> stats = reviewRepository.findReviewStatsGroupedByAccommodation(ReviewStatus.APPROVED);
+        Map<UUID, Object[]> statsMap = new HashMap<>();
+        for (Object[] row : stats) {
+            if (row != null && row.length >= 3 && row[0] instanceof UUID) {
+                statsMap.put((UUID) row[0], row);
+            }
+        }
+        for (AccommodationResponseDto dto : dtos) {
+            Object[] row = statsMap.get(dto.getId());
+            if (row != null) {
+                Double avg = row[1] != null ? ((Number) row[1]).doubleValue() : null;
+                Long count = row[2] != null ? ((Number) row[2]).longValue() : 0L;
+                dto.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : null);
+                dto.setReviewCount(count.intValue());
+            } else {
+                dto.setAverageRating(null);
+                dto.setReviewCount(0);
+            }
+        }
     }
 
     @Transactional

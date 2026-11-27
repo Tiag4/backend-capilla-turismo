@@ -17,4 +17,13 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     List<Review> findByAccommodationIdAndStatusOrderByCreatedAtDesc(UUID accommodationId, ReviewStatus status);
     List<Review> findByStatusOrderByCreatedAtDesc(ReviewStatus status);
     List<Review> findAllByOrderByCreatedAtDesc();
+
+    @org.springframework.data.jpa.repository.Query("SELECT AVG(r.rating) FROM Review r WHERE r.accommodation.id = :accommodationId AND r.status = :status")
+    Double findAverageRatingByAccommodationIdAndStatus(UUID accommodationId, ReviewStatus status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(r) FROM Review r WHERE r.accommodation.id = :accommodationId AND r.status = :status")
+    Long countByAccommodationIdAndStatus(UUID accommodationId, ReviewStatus status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT r.accommodation.id, AVG(r.rating), COUNT(r) FROM Review r WHERE r.status = :status GROUP BY r.accommodation.id")
+    List<Object[]> findReviewStatsGroupedByAccommodation(ReviewStatus status);
 }
