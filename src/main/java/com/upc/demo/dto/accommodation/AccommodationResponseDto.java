@@ -61,6 +61,8 @@ public class AccommodationResponseDto {
     private LocalDateTime updatedAt;
     private String inventoryMode;
     private String auditDataJson;
+    private Double averageRating;
+    private Integer reviewCount;
 
     @Builder.Default
     private List<RoomTypeResponseDto> roomTypes = new ArrayList<>();

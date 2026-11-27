@@ -62,6 +62,32 @@ public class BookingService {
     private static final int MAX_CODE_GENERATION_ATTEMPTS = 5;
     private final SecureRandom secureRandom = new SecureRandom();
 
+    private static class PromoDiscount {
+        final String code;
+        final BigDecimal discountAmount;
+        final BigDecimal finalTotal;
+
+        PromoDiscount(String code, BigDecimal discountAmount, BigDecimal finalTotal) {
+            this.code = code;
+            this.discountAmount = discountAmount;
+            this.finalTotal = finalTotal;
+        }
+    }
+
+    private PromoDiscount applyPromoCode(String promoCode, BigDecimal totalAmount) {
+        if (promoCode == null || promoCode.isBlank()) {
+            return new PromoDiscount(null, BigDecimal.ZERO, totalAmount);
+        }
+        String normalized = promoCode.trim().toUpperCase();
+        if ("CAPILLA10".equals(normalized)) {
+            BigDecimal discount = totalAmount.multiply(BigDecimal.valueOf(10))
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            BigDecimal discountedTotal = totalAmount.subtract(discount);
+            return new PromoDiscount("CAPILLA10", discount, discountedTotal);
+        }
+        throw new BadRequestException("El cupón de descuento '" + promoCode.trim() + "' no es válido o ha expirado");
+    }
+
     @Transactional
     public BookingResponseDto createBooking(CreateBookingDto dto, UserPrincipal currentUser) {
         // 1. Validación de fechas
@@ -130,8 +156,11 @@ public class BookingService {
         // 7. Cryptographically Secure Booking Code Generation: CAP-<YEAR>-<8_BASE32_CHARS>
         String bookingCode = generateUniqueBookingCode();
 
-        // 8. Cálculo de importe y seña
-        BigDecimal totalAmount = accommodation.getPricePerNight().multiply(BigDecimal.valueOf(totalNights));
+        // 8. Cálculo de importe, descuento y seña
+        BigDecimal subtotalAmount = accommodation.getPricePerNight().multiply(BigDecimal.valueOf(totalNights));
+        PromoDiscount promo = applyPromoCode(dto.getPromoCode(), subtotalAmount);
+        BigDecimal totalAmount = promo.finalTotal;
+
         int downPaymentPct = accommodation.getDownPaymentPercentage() != null ? accommodation.getDownPaymentPercentage() : 50;
         BigDecimal downPaymentAmount = totalAmount.multiply(BigDecimal.valueOf(downPaymentPct))
                 .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
@@ -153,6 +182,9 @@ public class BookingService {
                 .totalNights((int) totalNights)
                 .guestCount(dto.getGuestCount())
                 .pricePerNight(accommodation.getPricePerNight())
+                .subtotalAmount(subtotalAmount)
+                .promoCode(promo.code)
+                .discountAmount(promo.discountAmount)
                 .totalAmount(totalAmount)
                 .downPaymentPercentage(downPaymentPct)
                 .downPaymentAmount(downPaymentAmount)
@@ -280,16 +312,18 @@ public class BookingService {
             requestedUnitsByRoomType.merge(roomType.getId(), item.getQuantity(), Integer::sum);
         }
 
-        totalAmount = totalAmount.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal subtotalAmount = totalAmount.setScale(2, RoundingMode.HALF_UP);
+        PromoDiscount promo = applyPromoCode(dto.getPromoCode(), subtotalAmount);
+        BigDecimal finalTotalAmount = promo.finalTotal;
 
         // Precio por noche promedio ponderado sobre todas las unidades reservadas
-        BigDecimal pricePerNight = totalAmount.divide(
+        BigDecimal pricePerNight = subtotalAmount.divide(
                 BigDecimal.valueOf((long) totalNights * totalRequestedUnits), 2, RoundingMode.HALF_UP);
 
         int downPaymentPct = accommodation.getDownPaymentPercentage() != null ? accommodation.getDownPaymentPercentage() : 50;
-        BigDecimal downPaymentAmount = totalAmount.multiply(BigDecimal.valueOf(downPaymentPct))
+        BigDecimal downPaymentAmount = finalTotalAmount.multiply(BigDecimal.valueOf(downPaymentPct))
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-        BigDecimal remainingBalance = totalAmount.subtract(downPaymentAmount);
+        BigDecimal remainingBalance = finalTotalAmount.subtract(downPaymentAmount);
 
         User tourist = null;
         if (currentUser != null && currentUser.getId() != null) {
@@ -305,7 +339,10 @@ public class BookingService {
                 .totalNights(totalNights)
                 .guestCount(totalGuests)
                 .pricePerNight(pricePerNight)
-                .totalAmount(totalAmount)
+                .subtotalAmount(subtotalAmount)
+                .promoCode(promo.code)
+                .discountAmount(promo.discountAmount)
+                .totalAmount(finalTotalAmount)
                 .downPaymentPercentage(downPaymentPct)
                 .downPaymentAmount(downPaymentAmount)
                 .remainingBalance(remainingBalance)
@@ -505,6 +542,9 @@ public class BookingService {
                 .totalNights(booking.getTotalNights())
                 .guestCount(booking.getGuestCount())
                 .pricePerNight(booking.getPricePerNight())
+                .subtotalAmount(booking.getSubtotalAmount() != null ? booking.getSubtotalAmount() : booking.getTotalAmount())
+                .promoCode(booking.getPromoCode())
+                .discountAmount(booking.getDiscountAmount())
                 .totalAmount(booking.getTotalAmount())
                 .downPaymentPercentage(pct)
                 .downPaymentAmount(dpAmount)
@@ -581,6 +621,9 @@ public class BookingService {
                 .totalNights(booking.getTotalNights())
                 .guestCount(booking.getGuestCount())
                 .pricePerNight(booking.getPricePerNight())
+                .subtotalAmount(booking.getSubtotalAmount() != null ? booking.getSubtotalAmount() : booking.getTotalAmount())
+                .promoCode(booking.getPromoCode())
+                .discountAmount(booking.getDiscountAmount())
                 .totalAmount(booking.getTotalAmount())
                 .downPaymentPercentage(pct)
                 .downPaymentAmount(dpAmount)
