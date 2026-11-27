@@ -65,6 +65,9 @@ class AccommodationServiceTest {
     @Mock
     private BookingItemRepository bookingItemRepository;
 
+    @Mock
+    private com.upc.demo.repositorio.ReviewRepository reviewRepository;
+
     @InjectMocks
     private AccommodationService accommodationService;
 

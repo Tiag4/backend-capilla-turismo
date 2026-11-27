@@ -39,6 +39,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ErrorResponseDto> handleRateLimit(RateLimitExceededException ex) {
+        ErrorResponseDto error = ErrorResponseDto.builder()
+                .statusCode(HttpStatus.TOO_MANY_REQUESTS.value())
+                .message(ex.getMessage())
+                .error("Too Many Requests")
+                .timestamp(LocalDateTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(error);
+    }
+
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponseDto> handleBadRequest(BadRequestException ex) {
         ErrorResponseDto error = ErrorResponseDto.builder()

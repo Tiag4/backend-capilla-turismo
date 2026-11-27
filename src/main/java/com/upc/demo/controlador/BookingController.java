@@ -9,7 +9,9 @@ import com.upc.demo.dto.booking.UpdateBookingStatusDto;
 import com.upc.demo.dto.common.MessageResponseDto;
 import com.upc.demo.entidad.enums.BookingStatus;
 import com.upc.demo.entidad.enums.Role;
+import com.upc.demo.servicio.BookingLookupRateLimiter;
 import com.upc.demo.servicio.BookingService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,7 @@ import java.util.UUID;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final BookingLookupRateLimiter bookingLookupRateLimiter;
 
     @PostMapping
     public ResponseEntity<BookingResponseDto> createBooking(
@@ -66,13 +69,17 @@ public class BookingController {
     @GetMapping("/lookup")
     public ResponseEntity<BookingLookupResponseDto> lookupBooking(
             @RequestParam String code,
-            @RequestParam String email) {
+            @RequestParam String email,
+            HttpServletRequest request) {
+        bookingLookupRateLimiter.checkRateLimit(request);
         return ResponseEntity.ok(bookingService.lookup(code, email));
     }
 
     @PostMapping("/resend-voucher")
     public ResponseEntity<MessageResponseDto> resendVoucher(
-            @Valid @RequestBody ResendVoucherDto dto) {
+            @Valid @RequestBody ResendVoucherDto dto,
+            HttpServletRequest request) {
+        bookingLookupRateLimiter.checkRateLimit(request);
         boolean sent = bookingService.resendVoucherToGuest(dto.getCode(), dto.getEmail());
         return buildResendResponse(sent);
     }

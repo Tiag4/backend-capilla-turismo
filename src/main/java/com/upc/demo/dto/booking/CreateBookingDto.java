@@ -51,6 +51,8 @@ public class CreateBookingDto {
 
     private String notes;
 
+    private String promoCode;
+
     /**
      * Detalle multi-unidad de la reserva (tipos de habitación y tarifas).
      * Si la lista es nula o vacía se utiliza el flujo legacy de unidad única.
