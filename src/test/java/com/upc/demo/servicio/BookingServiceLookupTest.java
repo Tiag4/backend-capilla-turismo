@@ -1,6 +1,7 @@
 package com.upc.demo.servicio;
 
 import com.upc.demo.config.exception.BadRequestException;
+import com.upc.demo.config.exception.ConflictException;
 import com.upc.demo.config.exception.ResourceNotFoundException;
 import com.upc.demo.dto.booking.BookingLookupResponseDto;
 import com.upc.demo.entidad.Accommodation;
@@ -116,5 +117,46 @@ class BookingServiceLookupTest {
         assertThatThrownBy(() -> bookingService.lookup("CAP-999", "nadie@test.com"))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("No se encontr");
+    }
+
+    @Test
+    @DisplayName("generateUniqueBookingCode: genera códigos con formato CAP-YYYY-XXXXXXXX de alta entropía y sin caracteres ambiguos")
+    void generateUniqueBookingCode_generatesSecureFormat() {
+        when(bookingRepository.findByBookingCode(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(Optional.empty());
+
+        String code = bookingService.generateUniqueBookingCode();
+
+        int currentYear = LocalDate.now().getYear();
+        assertThat(code).startsWith("CAP-" + currentYear + "-");
+        assertThat(code).matches("^CAP-\\d{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}$");
+        // Verifica que no contenga caracteres ambiguos como 0, 1, I, O
+        assertThat(code.substring(9)).doesNotContain("0", "1", "I", "O");
+    }
+
+    @Test
+    @DisplayName("generateUniqueBookingCode: genera códigos únicos y distintos en llamadas sucesivas")
+    void generateUniqueBookingCode_generatesDistinctCodes() {
+        when(bookingRepository.findByBookingCode(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(Optional.empty());
+
+        java.util.Set<String> generated = new java.util.HashSet<>();
+        for (int i = 0; i < 50; i++) {
+            generated.add(bookingService.generateUniqueBookingCode());
+        }
+
+        assertThat(generated).hasSize(50);
+    }
+
+    @Test
+    @DisplayName("generateUniqueBookingCode: lanza ConflictException si se supera el límite de intentos por colisión")
+    void generateUniqueBookingCode_exceedsAttempts_throwsConflictException() {
+        Booking existing = Booking.builder().bookingCode("CAP-2026-OCCUPIED").build();
+        when(bookingRepository.findByBookingCode(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> bookingService.generateUniqueBookingCode())
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("No fue posible generar un código único");
     }
 }
